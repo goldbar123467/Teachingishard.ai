@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { StudentGrid } from '@/components/students/StudentGrid';
-import { useGame, useClassStats, useTurn, useTeacher } from '@/hooks/useGame';
+import { useGame, useClassStats, useTurn, useTeacher, useSchoolYear } from '@/hooks/useGame';
 import { DAY_LABELS, PHASE_LABELS, PHASE_ORDER } from '@/lib/game/constants';
 import type { Student, GameState, GameEvent } from '@/lib/game/types';
 import { LessonSelector } from '@/components/teaching/LessonSelector';
@@ -18,6 +18,11 @@ import { useAutoSave, formatLastSaved } from '@/hooks/useAutoSave';
 import { EventPopup, EventNotification } from '@/components/game/EventPopup';
 import { DayTransition, calculateDaySummary } from '@/components/game/DayTransition';
 import { StudentDetailModal } from '@/components/students/StudentDetailModal';
+import { MainLayout } from '@/components/layout';
+import { SchoolYearCalendar, SchoolYearProgress } from '@/components/dashboard/SchoolYearCalendar';
+import { SocialFeed } from '@/components/social/SocialFeed';
+import type { FeedPostData } from '@/components/social/FeedPost';
+import { generateSocialInteraction, generateFeedPost } from '@/lib/students/socialEngine';
 
 function PhaseIndicator() {
   const turn = useTurn();
@@ -281,15 +286,61 @@ function PhaseContent() {
   }
 }
 
+function generateSampleFeedPosts(students: Student[], currentDay: string | number): FeedPostData[] {
+  const posts: FeedPostData[] = [];
+
+  // Generate 3-5 random social interactions as feed posts
+  const numPosts = Math.floor(Math.random() * 3) + 3;
+  const dayNum = typeof currentDay === 'string' ? 0 : currentDay;
+
+  for (let i = 0; i < numPosts; i++) {
+    const student1 = students[Math.floor(Math.random() * students.length)];
+    let student2 = students[Math.floor(Math.random() * students.length)];
+
+    // Ensure student2 is different
+    while (student2.id === student1.id) {
+      student2 = students[Math.floor(Math.random() * students.length)];
+    }
+
+    try {
+      const interaction = generateSocialInteraction(student1, student2, dayNum);
+      const post = generateFeedPost(interaction, students);
+
+      // Transform to FeedPostData format
+      const feedPost: FeedPostData = {
+        id: post.id || `post-${i}-${Date.now()}`,
+        type: (post.type as any) || 'interaction',
+        author: post.author || student1.id,
+        content: post.content,
+        emoji: post.emoji,
+        timestamp: new Date(Date.now() - Math.random() * 3600000),
+        participants: interaction.participants || [student1.id, student2.id],
+        sentiment: post.sentiment as any,
+        likes: (post.likes ?? 0) + Math.floor(Math.random() * 8),
+      };
+
+      posts.push(feedPost);
+    } catch (error) {
+      // Silently skip if generation fails
+      console.debug('Feed post generation skipped');
+    }
+  }
+
+  return posts.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+}
+
 export default function Home() {
   const { state, newGame, loadGame, interactWithStudent, resolveEvent, checkForRandomEvents, advanceDay } = useGame();
   const classStats = useClassStats();
   const turn = useTurn();
   const teacher = useTeacher();
+  const schoolYear = useSchoolYear();
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [activeEvent, setActiveEvent] = useState<GameEvent | null>(null);
   const [showDayTransition, setShowDayTransition] = useState(false);
+  const [feedPosts, setFeedPosts] = useState<FeedPostData[]>([]);
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const previousPhaseRef = useRef(turn.phase);
   const previousStudentsRef = useRef(state.students);
   const previousTeacherEnergyRef = useRef(teacher.energy);
@@ -315,6 +366,12 @@ export default function Home() {
       checkForRandomEvents();
     }
   }, [turn.phase, checkForRandomEvents, state.students, teacher.energy]);
+
+  // Generate social feed posts when day changes or on mount
+  useEffect(() => {
+    const newPosts = generateSampleFeedPosts(state.students, turn.dayOfWeek);
+    setFeedPosts(newPosts);
+  }, [turn.dayOfWeek, state.students]);
 
   // Show event popup when new events appear
   useEffect(() => {
@@ -352,6 +409,27 @@ export default function Home() {
     setShowDayTransition(false);
   };
 
+  const handleLikePost = (postId: string) => {
+    setLikedPosts(prev => {
+      const newLiked = new Set(prev);
+      if (newLiked.has(postId)) {
+        newLiked.delete(postId);
+      } else {
+        newLiked.add(postId);
+      }
+      return newLiked;
+    });
+
+    // Update the post's like count
+    setFeedPosts(prev =>
+      prev.map(post =>
+        post.id === postId
+          ? { ...post, likes: (post.likes ?? 0) + (likedPosts.has(postId) ? -1 : 1) }
+          : post
+      )
+    );
+  };
+
   // Calculate day summary for transition
   const daySummary = calculateDaySummary(
     previousStudentsRef.current,
@@ -361,82 +439,20 @@ export default function Home() {
     teacher.energy
   );
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-zinc-900">
-      {/* Header */}
-      <header className="border-b dashboard-header sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                Classroom Simulator
-              </h1>
-              <p className="text-sm text-muted-foreground">5th Grade Teacher Dashboard</p>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="hidden lg:block">
-                <PhaseIndicator />
-              </div>
-              <div className="text-right">
-                <div className="font-semibold text-foreground">
-                  Week {turn.week} - {DAY_LABELS[turn.dayOfWeek]}
-                </div>
-                <Badge
-                  variant="secondary"
-                  className="bg-primary/10 text-primary border-primary/20"
-                >
-                  {PHASE_LABELS[turn.phase]}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <SaveLoadModal
-                  currentState={state}
-                  onLoad={handleLoadGame}
-                  trigger={
-                    <Button variant="outline" size="sm">
-                      Save/Load
-                    </Button>
-                  }
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => newGame('normal')}
-                  className="hidden sm:flex hover:bg-primary hover:text-primary-foreground transition-colors"
-                >
-                  New Game
-                </Button>
-              </div>
-            </div>
-          </div>
-          {/* Auto-save status bar */}
-          <div className="flex items-center justify-end gap-2 mt-2 text-xs text-muted-foreground">
-            {autoSave.isSaving ? (
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
-                Saving...
-              </span>
-            ) : autoSave.error ? (
-              <span className="flex items-center gap-1 text-red-500">
-                <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                Save failed
-              </span>
-            ) : (
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                Last saved: {formatLastSaved(autoSave.lastSaved)}
-              </span>
-            )}
-            <button
-              onClick={autoSave.save}
-              className="ml-2 underline hover:text-foreground transition-colors"
-            >
-              Save now
-            </button>
-          </div>
-        </div>
-      </header>
+  const [showSaveModal, setShowSaveModal] = useState(false);
 
-      <main className="container mx-auto px-4 py-6">
+  return (
+    <MainLayout onSaveClick={() => setShowSaveModal(true)}>
+      {/* Save/Load Modal */}
+      <SaveLoadModal
+        currentState={state}
+        onLoad={handleLoadGame}
+        trigger={<span />}
+        open={showSaveModal}
+        onOpenChange={setShowSaveModal}
+      />
+
+      <div className="container mx-auto px-4 py-6 lg:px-6">
         {/* Teacher Stats & Controls */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card className="md:col-span-2">
@@ -514,28 +530,52 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* Main Content */}
-        <Tabs defaultValue="grid" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="grid">Student Grid</TabsTrigger>
-            <TabsTrigger value="compact">Compact View</TabsTrigger>
-          </TabsList>
+        {/* School Year Calendar */}
+        <div className="mb-6">
+          <SchoolYearCalendar schoolYear={schoolYear} />
+        </div>
 
-          <TabsContent value="grid">
-            <StudentGrid
-              students={state.students}
-              onStudentClick={handleStudentClick}
-            />
-          </TabsContent>
+        {/* Main Content with Social Feed Sidebar */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: Student Grid (2/3 width on desktop) */}
+          <div className="lg:col-span-2">
+            <Tabs defaultValue="grid" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="grid">Student Grid</TabsTrigger>
+                <TabsTrigger value="compact">Compact View</TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="compact">
-            <StudentGrid
-              students={state.students}
-              onStudentClick={handleStudentClick}
-              compact
-            />
-          </TabsContent>
-        </Tabs>
+              <TabsContent value="grid">
+                <StudentGrid
+                  students={state.students}
+                  onStudentClick={handleStudentClick}
+                />
+              </TabsContent>
+
+              <TabsContent value="compact">
+                <StudentGrid
+                  students={state.students}
+                  onStudentClick={handleStudentClick}
+                  compact
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Right: Social Feed Sidebar (1/3 width on desktop, full width on mobile) */}
+          <div className="lg:col-span-1">
+            <div style={{ height: 'fit-content' }} className="sticky top-4">
+              <SocialFeed
+                posts={feedPosts}
+                students={state.students}
+                onLike={handleLikePost}
+                maxHeight="500px"
+                emptyStateEmoji="🤐"
+                emptyStateText="No drama yet... stay tuned!"
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Selected Student Panel */}
         {selectedStudent && (
@@ -646,7 +686,29 @@ export default function Home() {
           students={state.students}
           summary={daySummary}
         />
-      </main>
-    </div>
+
+        {/* Auto-save status floating badge */}
+        <div className="fixed bottom-4 right-4 z-50">
+          <div className="flex items-center gap-2 rounded-full bg-card/80 backdrop-blur-sm border px-3 py-1.5 text-xs text-muted-foreground shadow-lg">
+            {autoSave.isSaving ? (
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500"></span>
+                Saving...
+              </span>
+            ) : autoSave.error ? (
+              <span className="flex items-center gap-1.5 text-red-500">
+                <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                Save failed
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                {formatLastSaved(autoSave.lastSaved)}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </MainLayout>
   );
 }
