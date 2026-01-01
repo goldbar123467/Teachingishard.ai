@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useReducer, useCallback, type ReactNode, type Dispatch } from 'react';
+import { createContext, useReducer, useCallback, useEffect, useState, type ReactNode, type Dispatch } from 'react';
 import type { GameState, GameAction, Lesson, TeachingMethod, Activity, HomeworkType } from './types';
 import type { LessonPlan } from './lessonPlan';
 import type { StudentPhone, StudentPost } from '@/lib/students/socialMedia';
@@ -50,7 +50,13 @@ interface GameProviderProps {
 }
 
 export function GameProvider({ children }: GameProviderProps) {
+  const [isInitialized, setIsInitialized] = useState(false);
   const [state, dispatch] = useReducer(gameReducer, undefined, () => createInitialState('normal'));
+
+  // Ensure initialization only happens on client to prevent hydration mismatch
+  useEffect(() => {
+    setIsInitialized(true);
+  }, []);
 
   // Memoized action dispatchers
   const newGame = useCallback((difficulty: GameState['difficulty']) => {
@@ -185,6 +191,19 @@ export function GameProvider({ children }: GameProviderProps) {
     canAdvancePhase,
     canAdvanceDay,
   };
+
+  // Don't render children until client-side initialization is complete
+  // This prevents hydration mismatch from random state generation
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500 mx-auto mb-4" />
+          <p className="text-muted-foreground text-sm">Loading classroom...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <GameContext.Provider value={value}>

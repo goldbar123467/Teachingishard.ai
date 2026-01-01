@@ -1360,3 +1360,224 @@ html {
 .interactive-lift:active {
   transform: translateY(0);
 }
+
+/* ========== SCHEDULE TAB ENHANCEMENTS ========== */
+
+/* Schedule slot snap animation */
+@keyframes schedule-snap {
+  0% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.schedule-slot-snap {
+  animation: schedule-snap 0.3s ease-out;
+}
+
+/* Drop zone glow effect */
+@keyframes drop-zone-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(var(--primary), 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(var(--primary), 0);
+  }
+}
+
+.drop-zone-active {
+  animation: drop-zone-pulse 1.5s ease-in-out infinite;
+}
+
+/* Schedule grid cell transitions */
+.schedule-cell {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.schedule-cell:hover {
+  z-index: 10;
+}
+
+/* Time slot indicator */
+.time-slot-current {
+  position: relative;
+}
+
+.time-slot-current::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 8px var(--primary);
+}
+
+/* Lesson card in schedule */
+.lesson-scheduled {
+  position: relative;
+  overflow: hidden;
+}
+
+.lesson-scheduled::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Subject color accents for schedule */
+.schedule-math {
+  --subject-color: 59, 130, 246;
+}
+
+.schedule-reading {
+  --subject-color: 168, 85, 247;
+}
+
+.schedule-science {
+  --subject-color: 34, 197, 94;
+}
+
+.schedule-social-studies {
+  --subject-color: 245, 158, 11;
+}
+
+.schedule-art {
+  --subject-color: 236, 72, 153;
+}
+
+.schedule-pe {
+  --subject-color: 249, 115, 22;
+}
+
+/* Drag handle pulse */
+@keyframes drag-handle-pulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.drag-handle-hint {
+  animation: drag-handle-pulse 2s ease-in-out infinite;
+}
+
+/* Schedule empty slot pattern */
+.schedule-empty-slot {
+  background-image: radial-gradient(
+    circle,
+    rgba(var(--muted-foreground), 0.1) 1px,
+    transparent 1px
+  );
+  background-size: 10px 10px;
+}
+
+.dark .schedule-empty-slot {
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.03) 1px,
+    transparent 1px
+  );
+}
+
+/* Schedule day header gradient */
+.schedule-day-header {
+  background: linear-gradient(
+    180deg,
+    rgba(var(--background), 1) 0%,
+    rgba(var(--muted), 0.3) 100%
+  );
+}
+
+.dark .schedule-day-header {
+  background: linear-gradient(
+    180deg,
+    rgba(30, 41, 59, 0.8) 0%,
+    rgba(15, 23, 42, 0.5) 100%
+  );
+}
+
+/* Schedule validation indicator */
+@keyframes validation-success {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.validation-check {
+  animation: validation-success 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Drag overlay styles */
+.drag-overlay-card {
+  transform: rotate(3deg) scale(1.05);
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.dark .drag-overlay-card {
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Bounce animation for successful drops */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-4px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(-2px);
+  }
+}
+
+.bounce-on-drop {
+  animation: bounce-subtle 0.4s ease-out;
+}
+
+/* Quick action button animations */
+.quick-action-btn {
+  transition: all 0.2s ease;
+}
+
+.quick-action-btn:hover {
+  transform: scale(1.1);
+}
+
+.quick-action-btn:active {
+  transform: scale(0.95);
+}

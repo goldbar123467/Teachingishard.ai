@@ -365,47 +365,31 @@ export default function PlanningPage() {
 
           {/* Tab 1: Schedule - Unified Layout */}
           <TabsContent value="schedule" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-[600px]">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-[700px]">
               {/* Left Sidebar - Lesson Plans */}
               <div className="lg:col-span-1">
-                <Card className="h-full">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">My Lessons</CardTitle>
-                    <CardDescription className="text-xs">
-                      Drag to schedule
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-0 flex-1">
-                    <div className="px-6 pb-6">
-                      <LessonPlansSidebar
-                        lessonPlans={lessonPlans}
-                        scheduledPlanIds={Array.from(scheduledPlanIds)}
-                        onCreateNew={() => setActiveTab('create')}
-                        selectedFilter={filterSubject}
-                        onFilterChange={setFilterSubject}
-                      />
-                    </div>
+                <Card className="h-full border-border/50 dark:border-border/30 bg-gradient-to-br from-card to-muted/20 dark:from-slate-900/80 dark:to-slate-800/50">
+                  <CardContent className="p-4 h-full">
+                    <LessonPlansSidebar
+                      lessonPlans={lessonPlans}
+                      scheduledPlanIds={Array.from(scheduledPlanIds)}
+                      onCreateNew={() => setActiveTab('create')}
+                      selectedFilter={filterSubject}
+                      onFilterChange={setFilterSubject}
+                    />
                   </CardContent>
                 </Card>
               </div>
 
               {/* Right Panel - Schedule */}
               <div className="lg:col-span-3">
-                <Card className="h-full">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">Weekly Schedule</CardTitle>
-                    <CardDescription className="text-xs">
-                      Drag lessons here to assign them
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-0 flex-1">
-                    <div className="px-6 pb-6">
-                      <SchedulePanel
-                        scheduledLessons={scheduledLessons}
-                        onLessonAssigned={handleLessonAssigned}
-                        onLessonUnassigned={handleLessonUnassigned}
-                      />
-                    </div>
+                <Card className="h-full border-border/50 dark:border-border/30 bg-gradient-to-br from-card to-muted/10 dark:from-slate-900/80 dark:to-slate-800/30 overflow-hidden">
+                  <CardContent className="p-4 h-full">
+                    <SchedulePanel
+                      scheduledLessons={scheduledLessons}
+                      onLessonAssigned={handleLessonAssigned}
+                      onLessonUnassigned={handleLessonUnassigned}
+                    />
                   </CardContent>
                 </Card>
               </div>

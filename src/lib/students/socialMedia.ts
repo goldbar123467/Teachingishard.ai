@@ -280,7 +280,7 @@ function generateComment(
     gossip: ['Wait really?', 'I heard differently', 'Spill the tea', 'Who told you?'],
   };
 
-  const templates = commentTemplates[post.category];
+  const templates = commentTemplates[post.category] || commentTemplates.random;
   const content = templates[Math.floor(Math.random() * templates.length)];
 
   return {
