@@ -54,3 +54,14 @@ export function useSchoolYear() {
   const { state } = useGame();
   return state.schoolYear;
 }
+
+export function useLessonPlans() {
+  const { state, createLessonPlan, updateLessonPlan, deleteLessonPlan, duplicateLessonPlan } = useGame();
+  return {
+    lessonPlans: state.lessonPlans,
+    createLessonPlan,
+    updateLessonPlan,
+    deleteLessonPlan,
+    duplicateLessonPlan,
+  };
+}

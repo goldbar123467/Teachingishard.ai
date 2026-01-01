@@ -2,6 +2,7 @@
 
 import { createContext, useReducer, useCallback, type ReactNode, type Dispatch } from 'react';
 import type { GameState, GameAction, Lesson, TeachingMethod, Activity, HomeworkType } from './types';
+import type { LessonPlan } from './lessonPlan';
 import { gameReducer, createInitialState } from './reducer';
 import * as actions from './actions';
 
@@ -21,6 +22,12 @@ interface GameContextValue {
   interactWithStudent: (studentId: string, action: string) => void;
   resolveEvent: (eventId: string, choiceId: string) => void;
   checkForRandomEvents: () => void;
+
+  // Lesson Plan methods
+  createLessonPlan: (lessonPlan: LessonPlan) => void;
+  updateLessonPlan: (lessonPlan: LessonPlan) => void;
+  deleteLessonPlan: (planId: string) => void;
+  duplicateLessonPlan: (planId: string) => void;
 
   // Computed helpers
   canAdvancePhase: boolean;
@@ -81,6 +88,23 @@ export function GameProvider({ children }: GameProviderProps) {
     dispatch(actions.checkForRandomEvent());
   }, []);
 
+  // Lesson Plan methods
+  const createLessonPlan = useCallback((lessonPlan: LessonPlan) => {
+    dispatch(actions.createLessonPlan(lessonPlan));
+  }, []);
+
+  const updateLessonPlan = useCallback((lessonPlan: LessonPlan) => {
+    dispatch(actions.updateLessonPlan(lessonPlan));
+  }, []);
+
+  const deleteLessonPlan = useCallback((planId: string) => {
+    dispatch(actions.deleteLessonPlan(planId));
+  }, []);
+
+  const duplicateLessonPlanAction = useCallback((planId: string) => {
+    dispatch(actions.duplicateLessonPlan(planId));
+  }, []);
+
   // Computed state
   const canAdvancePhase = (() => {
     switch (state.turn.phase) {
@@ -114,6 +138,10 @@ export function GameProvider({ children }: GameProviderProps) {
     interactWithStudent,
     resolveEvent,
     checkForRandomEvents,
+    createLessonPlan,
+    updateLessonPlan,
+    deleteLessonPlan,
+    duplicateLessonPlan: duplicateLessonPlanAction,
     canAdvancePhase,
     canAdvanceDay,
   };

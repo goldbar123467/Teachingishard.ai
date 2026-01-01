@@ -53,3 +53,20 @@ export function checkForRandomEvent(): GameAction {
 export function moveTimeBlock(blockId: string, newDayOfWeek: number, newStartTime: string): GameAction {
   return { type: 'MOVE_TIME_BLOCK', payload: { blockId, newDayOfWeek, newStartTime } };
 }
+
+// Lesson Plan actions
+export function createLessonPlan(lessonPlan: import('./lessonPlan').LessonPlan): GameAction {
+  return { type: 'CREATE_LESSON_PLAN', payload: lessonPlan };
+}
+
+export function updateLessonPlan(lessonPlan: import('./lessonPlan').LessonPlan): GameAction {
+  return { type: 'UPDATE_LESSON_PLAN', payload: lessonPlan };
+}
+
+export function deleteLessonPlan(planId: string): GameAction {
+  return { type: 'DELETE_LESSON_PLAN', payload: { planId } };
+}
+
+export function duplicateLessonPlan(planId: string): GameAction {
+  return { type: 'DUPLICATE_LESSON_PLAN', payload: { planId } };
+}
