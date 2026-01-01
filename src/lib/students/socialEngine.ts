@@ -198,3 +198,277 @@ export function processSocialTurn(students: Student[], currentDay: number) {
 export function calculateFriendshipCompatibility(student1: Student, student2: Student): number {
   return calculateCompatibility(student1, student2).score;
 }
+
+// ============ GOSSIP & CHATTER SYSTEM ============
+
+export interface GossipContent {
+  topic: string;
+  content: string;
+  juiciness: number; // 1-10, how interesting is this gossip?
+  spreadsTo: string[]; // Student IDs who will hear it
+  sentiment: 'positive' | 'negative' | 'neutral';
+}
+
+/**
+ * Generate actual gossip content between students
+ */
+export function generateGossipContent(
+  gossiper: Student,
+  subject: Student,
+  allStudents: Student[]
+): GossipContent {
+  const topics = [
+    'crush',
+    'test_score',
+    'behavior',
+    'fashion',
+    'lunch',
+    'recess',
+    'teacher',
+    'friendship',
+    'homework',
+    'talent',
+  ];
+
+  const topic = topics[Math.floor(Math.random() * topics.length)];
+  let content = '';
+  let juiciness = 5;
+  let sentiment: GossipContent['sentiment'] = 'neutral';
+
+  switch (topic) {
+    case 'crush':
+      const randomStudent = allStudents[Math.floor(Math.random() * allStudents.length)];
+      content = `Did you know ${subject.firstName} likes ${randomStudent.firstName}?`;
+      juiciness = 9;
+      sentiment = 'neutral';
+      break;
+
+    case 'test_score':
+      const score = subject.testScores[subject.testScores.length - 1] || 85;
+      if (score >= 90) {
+        content = `${subject.firstName} got a ${score} on the test! So smart!`;
+        sentiment = 'positive';
+        juiciness = 6;
+      } else if (score < 70) {
+        content = `I heard ${subject.firstName} didn't do well on the test...`;
+        sentiment = 'negative';
+        juiciness = 7;
+      } else {
+        content = `${subject.firstName} got an okay score on the test.`;
+        sentiment = 'neutral';
+        juiciness = 3;
+      }
+      break;
+
+    case 'behavior':
+      if (subject.behaviorIncidents > 0) {
+        content = `${subject.firstName} got in trouble again today.`;
+        sentiment = 'negative';
+        juiciness = 8;
+      } else if (subject.positiveNotes > 2) {
+        content = `${subject.firstName} is always so well-behaved!`;
+        sentiment = 'positive';
+        juiciness = 4;
+      } else {
+        content = `${subject.firstName} was being silly in class.`;
+        sentiment = 'neutral';
+        juiciness = 5;
+      }
+      break;
+
+    case 'fashion':
+      content = `${subject.firstName} wore the coolest shirt today!`;
+      sentiment = 'positive';
+      juiciness = 4;
+      break;
+
+    case 'lunch':
+      const lunches = ['pizza', 'mystery meat', 'chicken nuggets', 'salad', 'PB&J'];
+      content = `${subject.firstName} brought ${lunches[Math.floor(Math.random() * lunches.length)]} for lunch.`;
+      sentiment = 'neutral';
+      juiciness = 2;
+      break;
+
+    case 'recess':
+      content = `${subject.firstName} was amazing at kickball during recess!`;
+      sentiment = 'positive';
+      juiciness = 5;
+      break;
+
+    case 'teacher':
+      content = `${subject.firstName} stayed after to help the teacher.`;
+      sentiment = 'positive';
+      juiciness = 4;
+      break;
+
+    case 'friendship':
+      const friend = allStudents.find(s => subject.friendIds.includes(s.id));
+      if (friend) {
+        content = `${subject.firstName} and ${friend.firstName} are best friends now!`;
+        sentiment = 'positive';
+        juiciness = 6;
+      } else {
+        content = `${subject.firstName} seems lonely lately.`;
+        sentiment = 'negative';
+        juiciness = 5;
+      }
+      break;
+
+    case 'homework':
+      if (subject.homeworkCompleted) {
+        content = `${subject.firstName} always does their homework perfectly.`;
+        sentiment = 'positive';
+        juiciness = 3;
+      } else {
+        content = `${subject.firstName} forgot their homework again!`;
+        sentiment = 'negative';
+        juiciness = 6;
+      }
+      break;
+
+    case 'talent':
+      const talents = ['drawing', 'singing', 'sports', 'math', 'reading'];
+      content = `${subject.firstName} is really good at ${talents[Math.floor(Math.random() * talents.length)]}!`;
+      sentiment = 'positive';
+      juiciness = 5;
+      break;
+  }
+
+  // Determine who the gossip spreads to based on friendship networks
+  const spreadsTo: string[] = [];
+  const gossiperFriends = allStudents.filter(s => gossiper.friendIds.includes(s.id));
+
+  // Gossip spreads to 1-3 friends depending on juiciness
+  const spreadCount = Math.min(juiciness >= 7 ? 3 : juiciness >= 5 ? 2 : 1, gossiperFriends.length);
+  for (let i = 0; i < spreadCount; i++) {
+    const friend = gossiperFriends[Math.floor(Math.random() * gossiperFriends.length)];
+    if (friend && !spreadsTo.includes(friend.id)) {
+      spreadsTo.push(friend.id);
+    }
+  }
+
+  return {
+    topic,
+    content,
+    juiciness,
+    spreadsTo,
+    sentiment,
+  };
+}
+
+/**
+ * Calculate group dynamics - who clusters with who
+ */
+export function calculateGroupDynamics(students: Student[]): Map<string, string[]> {
+  const clusters = new Map<string, string[]>();
+
+  for (const student of students) {
+    // Get all friends
+    const friendGroup = [student.id, ...student.friendIds];
+
+    // Check if this student already belongs to a cluster
+    let existingCluster: string[] | null = null;
+    for (const [leaderId, members] of clusters.entries()) {
+      if (members.some(id => friendGroup.includes(id))) {
+        existingCluster = members;
+        break;
+      }
+    }
+
+    if (existingCluster) {
+      // Add to existing cluster
+      for (const friendId of friendGroup) {
+        if (!existingCluster.includes(friendId)) {
+          existingCluster.push(friendId);
+        }
+      }
+    } else {
+      // Create new cluster
+      clusters.set(student.id, friendGroup);
+    }
+  }
+
+  return clusters;
+}
+
+/**
+ * Generate background classroom chatter
+ */
+export interface ClassroomChatter {
+  id: string;
+  participants: string[]; // Student IDs involved
+  chatterType: 'academic' | 'social' | 'gossip' | 'joke' | 'planning';
+  snippet: string; // What they're chatting about
+  volume: 'whisper' | 'normal' | 'loud';
+  isDisruptive: boolean;
+}
+
+export function generateClassroomChatter(
+  students: Student[],
+  currentActivity: 'lesson' | 'groupwork' | 'transition' | 'independent'
+): ClassroomChatter[] {
+  const chatter: ClassroomChatter[] = [];
+
+  // More chatter during transitions and group work
+  const chatterProbability = currentActivity === 'transition' ? 0.6 : currentActivity === 'groupwork' ? 0.5 : 0.2;
+
+  const groupDynamics = calculateGroupDynamics(students);
+
+  for (const [leaderId, members] of groupDynamics.entries()) {
+    if (Math.random() > chatterProbability) continue;
+    if (members.length < 2) continue;
+
+    // Pick 2-3 students from this cluster to chat
+    const chattingStudents = members
+      .map(id => students.find(s => s.id === id))
+      .filter(Boolean)
+      .slice(0, Math.floor(Math.random() * 2) + 2) as Student[];
+
+    if (chattingStudents.length < 2) continue;
+
+    const student1 = chattingStudents[0];
+    const student2 = chattingStudents[1];
+
+    // Determine chatter type based on clique and personalities
+    let chatterType: ClassroomChatter['chatterType'] = 'social';
+    let snippet = '';
+    let volume: ClassroomChatter['volume'] = 'whisper';
+    let isDisruptive = false;
+
+    if (student1.clique === 'nerds' || student2.clique === 'nerds') {
+      chatterType = 'academic';
+      snippet = `${student1.firstName}: "Did you understand the homework?" ${student2.firstName}: "Yeah, problem 5 was tricky..."`;
+      volume = 'whisper';
+    } else if (student1.primaryTrait === 'outgoing' || student2.primaryTrait === 'outgoing') {
+      chatterType = 'joke';
+      snippet = `${student1.firstName} tells a joke and both students giggle.`;
+      volume = 'normal';
+      isDisruptive = currentActivity === 'lesson' || currentActivity === 'independent';
+    } else if (student1.primaryTrait === 'social' || student2.primaryTrait === 'social') {
+      chatterType = 'social';
+      snippet = `${student1.firstName}: "Want to sit together at lunch?" ${student2.firstName}: "Sure!"`;
+      volume = 'whisper';
+    } else if (Math.random() < 0.3) {
+      chatterType = 'gossip';
+      const gossipSubject = students[Math.floor(Math.random() * students.length)];
+      const gossip = generateGossipContent(student1, gossipSubject, students);
+      snippet = `${student1.firstName} whispers: "${gossip.content}"`;
+      volume = 'whisper';
+    } else {
+      chatterType = 'planning';
+      snippet = `${student1.firstName} and ${student2.firstName} quietly plan their recess game.`;
+      volume = 'whisper';
+    }
+
+    chatter.push({
+      id: `chatter-${student1.id}-${student2.id}-${Date.now()}`,
+      participants: chattingStudents.map(s => s.id),
+      chatterType,
+      snippet,
+      volume,
+      isDisruptive,
+    });
+  }
+
+  return chatter;
+}

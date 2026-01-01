@@ -27,6 +27,27 @@ import {
   getPivotOptions,
 } from './lessonPivot';
 import { duplicateLessonPlan } from './lessonPlan';
+import {
+  createGradebook,
+  addAssignment,
+  updateAssignment,
+  deleteAssignment,
+  addOrUpdateGrade,
+  autoGradeAssignment,
+  type Gradebook,
+  type Assignment,
+  type StudentGrade,
+  type AssignmentType,
+} from './grading';
+import {
+  createPacingState,
+  applyRushing,
+  applyDeepDive,
+  applyTimePressureEvent,
+  applyPacingEffects,
+  type PacingMode,
+  type TimePressureEvent,
+} from './timeManagement';
 
 function calculateClassAverage(students: GameState['students']): number {
   if (students.length === 0) return 0;
@@ -77,6 +98,12 @@ export function createInitialState(difficulty: GameState['difficulty'] = 'normal
     currentLessonStatus: null,
     // Lesson plans
     lessonPlans: [],
+    // Grading system
+    gradebook: createGradebook(),
+    // Time management
+    currentPacingMode: 'normal',
+    activePacingState: null,
+    activeTimePressure: null,
     classAverage: calculateClassAverage(students),
     difficulty,
     autoSaveEnabled: true,
@@ -783,6 +810,190 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ...state.currentSchedule,
           blocks: updatedBlocks,
         },
+      };
+    }
+
+    // ============ GRADING ACTIONS ============
+    case 'CREATE_ASSIGNMENT': {
+      return {
+        ...state,
+        gradebook: addAssignment(state.gradebook, action.payload),
+      };
+    }
+
+    case 'UPDATE_ASSIGNMENT': {
+      return {
+        ...state,
+        gradebook: updateAssignment(state.gradebook, action.payload),
+      };
+    }
+
+    case 'DELETE_ASSIGNMENT': {
+      return {
+        ...state,
+        gradebook: deleteAssignment(state.gradebook, action.payload.assignmentId),
+      };
+    }
+
+    case 'GRADE_ASSIGNMENT': {
+      return {
+        ...state,
+        gradebook: addOrUpdateGrade(state.gradebook, action.payload),
+      };
+    }
+
+    case 'UPDATE_GRADE': {
+      return {
+        ...state,
+        gradebook: addOrUpdateGrade(state.gradebook, action.payload),
+      };
+    }
+
+    case 'AUTO_GRADE_ASSIGNMENTS': {
+      const { assignmentId, studentIds } = action.payload;
+      const assignment = state.gradebook.assignments.find(a => a.id === assignmentId);
+
+      if (!assignment) return state;
+
+      const studentsToGrade = studentIds
+        ? state.students.filter(s => studentIds.includes(s.id))
+        : state.students;
+
+      let updatedGradebook = state.gradebook;
+
+      for (const student of studentsToGrade) {
+        // Check if student submitted (based on homework completion as proxy)
+        const wasLate = Math.random() < 0.2; // 20% chance of late submission
+        const grade = autoGradeAssignment(student, assignment, wasLate);
+        updatedGradebook = addOrUpdateGrade(updatedGradebook, grade);
+      }
+
+      return {
+        ...state,
+        gradebook: updatedGradebook,
+      };
+    }
+
+    case 'UPDATE_GRADE_WEIGHTS': {
+      return {
+        ...state,
+        gradebook: {
+          ...state.gradebook,
+          weights: action.payload,
+        },
+      };
+    }
+
+    // ============ TIME MANAGEMENT ACTIONS ============
+    case 'SET_PACING_MODE': {
+      const { mode } = action.payload;
+      const pacingState = createPacingState(mode);
+
+      return {
+        ...state,
+        currentPacingMode: mode,
+        activePacingState: pacingState,
+      };
+    }
+
+    case 'APPLY_RUSHING': {
+      const { targetProgress } = action.payload;
+
+      if (!state.currentLessonStatus || !state.timeTracker) return state;
+
+      const rushingEffect = applyRushing(
+        state.currentLessonStatus.progress,
+        targetProgress,
+        state.timeTracker.remainingMinutes
+      );
+
+      // Apply effects to students
+      const updatedStudents = state.students.map(student => ({
+        ...student,
+        engagement: Math.max(0, Math.min(100, student.engagement + rushingEffect.engagementChange)),
+        academicLevel: Math.max(0, student.academicLevel - rushingEffect.comprehensionPenalty),
+      }));
+
+      // Apply stress to teacher
+      const updatedTeacher = {
+        ...state.teacher,
+        energy: Math.max(0, state.teacher.energy - rushingEffect.stressGain),
+      };
+
+      // Update lesson status
+      const updatedLessonStatus = {
+        ...state.currentLessonStatus,
+        progress: rushingEffect.contentCovered,
+      };
+
+      return {
+        ...state,
+        students: updatedStudents,
+        teacher: updatedTeacher,
+        currentLessonStatus: updatedLessonStatus,
+        classAverage: calculateClassAverage(updatedStudents),
+      };
+    }
+
+    case 'APPLY_DEEP_DIVE': {
+      const { topic } = action.payload;
+
+      if (!state.currentLessonStatus || !state.timeTracker) return state;
+
+      const deepDiveEffect = applyDeepDive(
+        state.currentLessonStatus.progress,
+        topic,
+        state.timeTracker.remainingMinutes,
+        state.teacher.energy
+      );
+
+      // Apply benefits to students
+      const updatedStudents = state.students.map(student => ({
+        ...student,
+        engagement: Math.max(0, Math.min(100, student.engagement + deepDiveEffect.engagementChange)),
+        academicLevel: Math.min(100, student.academicLevel + deepDiveEffect.studentBenefits.academicBoost),
+      }));
+
+      // Apply energy cost to teacher
+      const updatedTeacher = {
+        ...state.teacher,
+        energy: Math.max(0, state.teacher.energy - deepDiveEffect.energyCost),
+      };
+
+      return {
+        ...state,
+        students: updatedStudents,
+        teacher: updatedTeacher,
+        classAverage: calculateClassAverage(updatedStudents),
+      };
+    }
+
+    case 'TRIGGER_TIME_PRESSURE': {
+      const event = action.payload;
+
+      if (!state.timeTracker) return state;
+
+      const { updatedTimeTracker, updatedTeacher, updatedStudents } = applyTimePressureEvent(
+        event,
+        state.timeTracker,
+        state.teacher,
+        state.students
+      );
+
+      return {
+        ...state,
+        timeTracker: updatedTimeTracker,
+        teacher: updatedTeacher,
+        students: updatedStudents,
+        activeTimePressure: event,
+        classAverage: calculateClassAverage(updatedStudents),
+      };
+    }
+
+    case 'RESOLVE_TIME_PRESSURE': {
+      return {
+        ...state,
+        activeTimePressure: null,
       };
     }
 

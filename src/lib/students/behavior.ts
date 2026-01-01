@@ -1,6 +1,27 @@
 import type { Student, Lesson, TeachingMethod, HomeworkType, Mood, GamePhase } from '../game/types';
 import { PERSONALITY_PROFILES } from './personalities';
 
+// Import emergent behavior systems
+import {
+  generateEmergentAction,
+  generateChainReaction,
+  type BehaviorContext,
+  type EmergentAction,
+} from './emergentBehavior';
+import {
+  generateGossipContent,
+  generateClassroomChatter,
+  calculateGroupDynamics,
+  type GossipContent,
+  type ClassroomChatter,
+} from './socialEngine';
+import {
+  generateTeacherInteraction,
+  generateStudentInitiatedInteraction,
+  type TeacherActionType,
+  type TeacherInteraction,
+} from './teacherInteractions';
+
 // Mood transition weights
 const MOOD_ORDER: Mood[] = ['upset', 'frustrated', 'bored', 'neutral', 'happy', 'excited'];
 
@@ -915,3 +936,157 @@ export function getParticipationBehavior(student: Student): {
     };
   }
 }
+
+// ============ DEEP PERSONALITY INTEGRATION ============
+
+/**
+ * Get a random quirk for a student based on their personality
+ */
+export function getRandomQuirk(student: Student): string {
+  const profile = PERSONALITY_PROFILES[student.primaryTrait];
+  return profile.quirks[Math.floor(Math.random() * profile.quirks.length)];
+}
+
+/**
+ * Get a random classroom habit for a student
+ */
+export function getRandomClassroomHabit(student: Student): string {
+  const profile = PERSONALITY_PROFILES[student.primaryTrait];
+  return profile.classroomHabits[Math.floor(Math.random() * profile.classroomHabits.length)];
+}
+
+/**
+ * Get a random social behavior for a student
+ */
+export function getRandomSocialBehavior(student: Student): string {
+  const profile = PERSONALITY_PROFILES[student.primaryTrait];
+  return profile.socialBehaviors[Math.floor(Math.random() * profile.socialBehaviors.length)];
+}
+
+/**
+ * Check if a context triggers positive response from student
+ */
+export function isPositiveTrigger(student: Student, trigger: string): boolean {
+  const profile = PERSONALITY_PROFILES[student.primaryTrait];
+  return profile.triggers.positive.some(t => t.toLowerCase().includes(trigger.toLowerCase()));
+}
+
+/**
+ * Check if a context triggers negative response from student
+ */
+export function isNegativeTrigger(student: Student, trigger: string): boolean {
+  const profile = PERSONALITY_PROFILES[student.primaryTrait];
+  return profile.triggers.negative.some(t => t.toLowerCase().includes(trigger.toLowerCase()));
+}
+
+// ============ BEHAVIOR SNAPSHOT SYSTEM ============
+
+/**
+ * Main behavior orchestrator - generates all student behaviors for a turn
+ */
+export interface BehaviorSnapshot {
+  emergentActions: EmergentAction[];
+  chatter: ClassroomChatter[];
+  teacherInteractions: TeacherInteraction[];
+  gossip: GossipContent[];
+}
+
+export function generateBehaviorSnapshot(
+  students: Student[],
+  context: BehaviorContext
+): BehaviorSnapshot {
+  const emergentActions: EmergentAction[] = [];
+  const teacherInteractions: TeacherInteraction[] = [];
+  const gossip: GossipContent[] = [];
+
+  // 1. Generate emergent actions for each student
+  for (const student of students) {
+    const action = generateEmergentAction(student, context);
+    if (action) {
+      emergentActions.push(action);
+
+      // 2. Check for chain reactions
+      if (action.affectsStudents.length > 0) {
+        for (const affectedId of action.affectsStudents) {
+          const affectedStudent = students.find(s => s.id === affectedId);
+          if (affectedStudent) {
+            const chainReaction = generateChainReaction(action, affectedStudent, students);
+            if (chainReaction) {
+              emergentActions.push(chainReaction);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Generate classroom chatter
+  const activityMapping: Record<typeof context.currentActivity, Parameters<typeof generateClassroomChatter>[1]> = {
+    lesson: 'lesson',
+    transition: 'transition',
+    groupwork: 'groupwork',
+    independent: 'independent',
+    recess: 'transition',
+    test: 'independent',
+  };
+
+  const chatter = generateClassroomChatter(students, activityMapping[context.currentActivity]);
+
+  // 4. Generate some student-initiated teacher interactions (10% chance per student)
+  for (const student of students) {
+    if (Math.random() < 0.1) {
+      const reasons: Parameters<typeof generateStudentInitiatedInteraction>[1][] = [
+        'question',
+        'help',
+        'share',
+        'off-topic',
+      ];
+      const reason = reasons[Math.floor(Math.random() * reasons.length)];
+      const interaction = generateStudentInitiatedInteraction(student, reason);
+      if (interaction) {
+        teacherInteractions.push(interaction);
+      }
+    }
+  }
+
+  // 5. Generate gossip (small chance during transitions)
+  if (context.currentActivity === 'transition' || context.currentActivity === 'recess') {
+    for (const student of students) {
+      if (Math.random() < 0.05) {
+        // 5% chance
+        const subject = students[Math.floor(Math.random() * students.length)];
+        if (subject.id !== student.id) {
+          const gossipItem = generateGossipContent(student, subject, students);
+          gossip.push(gossipItem);
+        }
+      }
+    }
+  }
+
+  return {
+    emergentActions,
+    chatter,
+    teacherInteractions,
+    gossip,
+  };
+}
+
+// Re-export types and functions for convenience
+export type {
+  BehaviorContext,
+  EmergentAction,
+  GossipContent,
+  ClassroomChatter,
+  TeacherActionType,
+  TeacherInteraction,
+};
+
+export {
+  generateEmergentAction,
+  generateChainReaction,
+  generateGossipContent,
+  generateClassroomChatter,
+  calculateGroupDynamics,
+  generateTeacherInteraction,
+  generateStudentInitiatedInteraction,
+};

@@ -1,4 +1,6 @@
 import type { GameEvent, Student } from '@/lib/game/types';
+import { checkForParentEvents } from './parentEvents';
+import { checkForSpecialEvents } from './specialEvents';
 
 // Event template - events are generated with actual student IDs at runtime
 export interface EventTemplate {
@@ -534,4 +536,42 @@ export function checkForEvents(
   }
 
   return events;
+}
+
+/**
+ * Comprehensive event checking system
+ * Includes standard events, parent events, special events, and behavior events
+ */
+export function checkForAllEvents(
+  phase: string,
+  students: Student[],
+  currentDay: number,
+  difficulty: 'easy' | 'normal' | 'hard',
+  seasonalContext?: string
+): {
+  gameEvents: GameEvent[];
+  parentEvents: any[];
+  specialEvents: any[];
+  behaviorEvents: any[];
+} {
+  // Standard phase events
+  const gameEvents = checkForEvents(phase, students, difficulty);
+
+  // Parent events (end of day only)
+  const parentEvents = phase === 'end-of-day'
+    ? checkForParentEvents(students, currentDay, difficulty)
+    : [];
+
+  // Special events (can happen any time)
+  const specialEvents = checkForSpecialEvents(currentDay, difficulty, seasonalContext);
+
+  // Behavior events are generated per-student in the game loop
+  const behaviorEvents: any[] = [];
+
+  return {
+    gameEvents,
+    parentEvents,
+    specialEvents,
+    behaviorEvents
+  };
 }

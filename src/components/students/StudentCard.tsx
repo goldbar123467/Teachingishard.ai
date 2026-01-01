@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,6 +9,10 @@ import { getStudentFullName, getStudentInitials } from '@/lib/students/generator
 import { cn } from '@/lib/utils';
 import { MoodIndicator } from './MoodIndicator';
 import { PerformanceBar } from './PerformanceBar';
+import { ThoughtBubble } from './ThoughtBubble';
+import { CompactStatusIndicators } from './StatusIndicators';
+import { StudentInteractionBadge, StudentInteractionIndicator } from './InteractionIndicators';
+import { useState } from 'react';
 
 interface StudentCardProps {
   student: Student;
@@ -84,18 +89,97 @@ const DEFAULT_GRADIENT = {
   ring: 'ring-gray-400/30 group-hover:ring-gray-400/60',
 };
 
+// Animation variants based on student state
+function getIdleAnimation(student: Student) {
+  // Distracted - fidgeting animation
+  if (student.engagement < 30 || student.primaryTrait === 'distracted') {
+    return {
+      x: [0, -1, 1, -1, 0],
+      y: [0, -0.5, 0.5, -0.5, 0],
+      transition: {
+        duration: 2,
+        repeat: Infinity,
+        repeatType: 'loop' as const,
+      },
+    };
+  }
+
+  // Low energy - sleepy bob
+  if (student.energy < 30) {
+    return {
+      y: [0, 3, 0],
+      transition: {
+        duration: 3,
+        repeat: Infinity,
+        repeatType: 'loop' as const,
+      },
+    };
+  }
+
+  // Excited - bounce
+  if (student.mood === 'excited' || student.engagement > 90) {
+    return {
+      y: [0, -4, 0],
+      transition: {
+        duration: 1.5,
+        repeat: Infinity,
+        repeatType: 'loop' as const,
+      },
+    };
+  }
+
+  // Happy - gentle sway
+  if (student.mood === 'happy') {
+    return {
+      rotate: [0, 1, 0, -1, 0],
+      transition: {
+        duration: 4,
+        repeat: Infinity,
+        repeatType: 'loop' as const,
+      },
+    };
+  }
+
+  // Frustrated - shake
+  if (student.mood === 'frustrated') {
+    return {
+      rotate: [0, -2, 2, -2, 0],
+      transition: {
+        duration: 0.5,
+        repeat: Infinity,
+        repeatDelay: 3,
+        repeatType: 'loop' as const,
+      },
+    };
+  }
+
+  // Default - no animation
+  return {};
+}
+
 export function StudentCard({ student, onClick, compact = false }: StudentCardProps) {
   const traitStyle = TRAIT_GRADIENTS[student.primaryTrait] || DEFAULT_GRADIENT;
+  const [showThought, setShowThought] = useState(false);
+  const idleAnimation = getIdleAnimation(student);
 
   if (compact) {
     return (
-      <div
+      <motion.div
         className={cn(
           'relative cursor-pointer group',
           !student.attendanceToday && 'opacity-50'
         )}
         onClick={onClick}
+        onHoverStart={() => setShowThought(true)}
+        onHoverEnd={() => setShowThought(false)}
+        animate={idleAnimation}
       >
+        {/* Thought bubble on hover */}
+        <ThoughtBubble student={student} visible={showThought} />
+
+        {/* Interaction indicators */}
+        <StudentInteractionBadge student={student} position="top-right" />
+
         {/* Gradient border effect */}
         <div className={cn(
           'absolute -inset-[1px] rounded-xl bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm',
@@ -128,18 +212,28 @@ export function StudentCard({ student, onClick, compact = false }: StudentCardPr
             </div>
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div
+    <motion.div
       className={cn(
         'relative cursor-pointer group',
         !student.attendanceToday && 'opacity-50'
       )}
       onClick={onClick}
+      onHoverStart={() => setShowThought(true)}
+      onHoverEnd={() => setShowThought(false)}
+      animate={idleAnimation}
     >
+      {/* Thought bubble on hover */}
+      <ThoughtBubble student={student} visible={showThought} />
+
+      {/* Interaction indicators */}
+      <StudentInteractionBadge student={student} position="top-left" />
+      <StudentInteractionIndicator student={student} />
+
       {/* Gradient glow effect */}
       <div className={cn(
         'absolute -inset-[2px] rounded-xl bg-gradient-to-r opacity-0 group-hover:opacity-70 transition-all duration-300',
@@ -224,43 +318,13 @@ export function StudentCard({ student, onClick, compact = false }: StudentCardPr
               />
             </div>
 
-            {/* Badges with glass effect */}
-            <div className="flex flex-wrap gap-1.5 justify-center min-h-[24px]">
-              {student.hasIEP && (
-                <Badge
-                  variant="outline"
-                  className="text-xs bg-blue-500/10 backdrop-blur-sm border-blue-400/30 text-blue-600 dark:text-blue-400 shadow-sm"
-                >
-                  IEP
-                </Badge>
-              )}
-              {student.isGifted && (
-                <Badge
-                  variant="outline"
-                  className="text-xs bg-purple-500/10 backdrop-blur-sm border-purple-400/30 text-purple-600 dark:text-purple-400 shadow-sm"
-                >
-                  Gifted
-                </Badge>
-              )}
-              {student.needsExtraHelp && !student.hasIEP && (
-                <Badge
-                  variant="outline"
-                  className="text-xs bg-orange-500/10 backdrop-blur-sm border-orange-400/30 text-orange-600 dark:text-orange-400 shadow-sm"
-                >
-                  Needs Help
-                </Badge>
-              )}
-              {!student.homeworkCompleted && (
-                <Badge
-                  className="text-xs bg-gradient-to-r from-red-500 to-rose-500 border-0 text-white shadow-sm"
-                >
-                  No HW
-                </Badge>
-              )}
+            {/* Status Indicators */}
+            <div className="flex flex-col gap-2 w-full">
+              <CompactStatusIndicators student={student} />
             </div>
           </div>
         </CardContent>
       </Card>
-    </div>
+    </motion.div>
   );
 }

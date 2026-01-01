@@ -178,6 +178,27 @@ export type {
   TeachingMethodType,
 } from './lessonPlan';
 
+// Re-export grading types for convenience
+export type {
+  LetterGrade,
+  AssignmentType,
+  GradingCriteria,
+  RubricLevel,
+  Assignment,
+  StudentGrade,
+  Gradebook,
+} from './grading';
+
+// Re-export time management types for convenience
+export type {
+  PacingMode,
+  TimePacingState,
+  TimePressureEvent,
+  RushingEffect,
+  DeepDiveEffect,
+  TimeManagementChoice,
+} from './timeManagement';
+
 // ============ GAME STATE ============
 export interface GameState {
   saveId: string;
@@ -199,6 +220,14 @@ export interface GameState {
 
   // Lesson plans
   lessonPlans: import('./lessonPlan').LessonPlan[];
+
+  // Grading system
+  gradebook: import('./grading').Gradebook;
+
+  // Time management
+  currentPacingMode: import('./timeManagement').PacingMode;
+  activePacingState: import('./timeManagement').TimePacingState | null;
+  activeTimePressure: import('./timeManagement').TimePressureEvent | null;
 
   classAverage: number;
 
@@ -238,4 +267,18 @@ export type GameAction =
   | { type: 'UPDATE_LESSON_PLAN'; payload: import('./lessonPlan').LessonPlan }
   | { type: 'DELETE_LESSON_PLAN'; payload: { planId: string } }
   | { type: 'DUPLICATE_LESSON_PLAN'; payload: { planId: string } }
-  | { type: 'ASSIGN_PLAN_TO_BLOCK'; payload: { planId: string; blockId: string } };
+  | { type: 'ASSIGN_PLAN_TO_BLOCK'; payload: { planId: string; blockId: string } }
+  // Grading actions
+  | { type: 'CREATE_ASSIGNMENT'; payload: import('./grading').Assignment }
+  | { type: 'UPDATE_ASSIGNMENT'; payload: import('./grading').Assignment }
+  | { type: 'DELETE_ASSIGNMENT'; payload: { assignmentId: string } }
+  | { type: 'GRADE_ASSIGNMENT'; payload: import('./grading').StudentGrade }
+  | { type: 'UPDATE_GRADE'; payload: import('./grading').StudentGrade }
+  | { type: 'AUTO_GRADE_ASSIGNMENTS'; payload: { assignmentId: string; studentIds?: string[] } }
+  | { type: 'UPDATE_GRADE_WEIGHTS'; payload: Record<import('./grading').AssignmentType, number> }
+  // Time management actions
+  | { type: 'SET_PACING_MODE'; payload: { mode: import('./timeManagement').PacingMode } }
+  | { type: 'APPLY_RUSHING'; payload: { targetProgress: number } }
+  | { type: 'APPLY_DEEP_DIVE'; payload: { topic: string } }
+  | { type: 'TRIGGER_TIME_PRESSURE'; payload: import('./timeManagement').TimePressureEvent }
+  | { type: 'RESOLVE_TIME_PRESSURE'; payload: { eventId: string } };
