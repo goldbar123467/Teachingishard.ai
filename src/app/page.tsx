@@ -154,6 +154,11 @@ function PhaseContent() {
   const turn = useTurn();
   const teacher = useTeacher();
   const { state, selectLesson, selectMethod, assignHomework } = useGame();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const classLearningStyles = state.students.map(s => s.learningStyle);
 
@@ -170,15 +175,15 @@ function PhaseContent() {
             </p>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <div className="text-2xl font-bold">{state.students.filter(s => s.attendanceToday).length}</div>
+                <div className="text-2xl font-bold">{mounted ? state.students.filter(s => s.attendanceToday).length : '-'}</div>
                 <div className="text-xs text-muted-foreground">Present</div>
               </div>
               <div>
-                <div className="text-2xl font-bold">{state.students.filter(s => s.homeworkCompleted).length}</div>
+                <div className="text-2xl font-bold">{mounted ? state.students.filter(s => s.homeworkCompleted).length : '-'}</div>
                 <div className="text-xs text-muted-foreground">Homework Done</div>
               </div>
               <div>
-                <div className="text-2xl font-bold">{state.students.filter(s => s.mood === 'happy' || s.mood === 'excited').length}</div>
+                <div className="text-2xl font-bold">{mounted ? state.students.filter(s => s.mood === 'happy' || s.mood === 'excited').length : '-'}</div>
                 <div className="text-xs text-muted-foreground">Happy</div>
               </div>
             </div>
