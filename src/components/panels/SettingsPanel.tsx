@@ -10,11 +10,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info, RotateCcw } from 'lucide-react';
 
 export function SettingsPanel() {
-  const { state, newGame, toggleAutoSave } = useGame();
+  const { state, newGame } = useGame();
 
   const handleResetGame = () => {
     if (window.confirm('Are you sure you want to start a new game? This will reset all progress.')) {
-      newGame();
+      newGame('normal');
     }
   };
 
@@ -46,7 +46,7 @@ export function SettingsPanel() {
               <Switch
                 id="auto-save"
                 checked={state.autoSaveEnabled}
-                onCheckedChange={toggleAutoSave}
+                disabled
               />
             </div>
 

@@ -173,7 +173,7 @@ export function ReportsPanel() {
                   </h4>
                   <div className="space-y-2">
                     {state.students
-                      .sort((a, b) => a.academicScore - b.academicScore)
+                      .sort((a, b) => a.academicLevel - b.academicLevel)
                       .slice(0, 5)
                       .map((student) => (
                         <div key={student.id} className="flex justify-between items-center p-2 rounded-lg bg-amber-50 dark:bg-amber-900/10">
@@ -181,7 +181,7 @@ export function ReportsPanel() {
                             {student.firstName} {student.lastName}
                           </span>
                           <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900/30">
-                            {student.academicScore}%
+                            {student.academicLevel}%
                           </Badge>
                         </div>
                       ))}

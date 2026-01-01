@@ -78,7 +78,7 @@ export function StudentsPanel() {
                     <div className="flex gap-4 text-sm">
                       <div>
                         <span className="text-muted-foreground">Grade: </span>
-                        <span className="font-medium">{student.academicScore}%</span>
+                        <span className="font-medium">{student.academicLevel}%</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Energy: </span>
