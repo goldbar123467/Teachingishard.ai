@@ -225,6 +225,7 @@ export function FeedPost({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => onLike?.(post.id)}
+                aria-label={`Like this post from ${authorStudent?.firstName || 'System'}. Currently has ${post.likes ?? 0} likes`}
                 className={cn(
                   'flex items-center gap-1 px-3 py-1.5 rounded-md text-sm transition-all',
                   'hover:bg-muted active:scale-95'
@@ -241,6 +242,7 @@ export function FeedPost({
                   variant="ghost"
                   size="sm"
                   className="h-8 px-2 text-xs"
+                  aria-label="Reply to this post"
                 >
                   💬 Reply
                 </Button>
@@ -248,6 +250,7 @@ export function FeedPost({
                   variant="ghost"
                   size="sm"
                   className="h-8 px-2 text-xs"
+                  aria-label="Share this post"
                 >
                   🔗 Share
                 </Button>

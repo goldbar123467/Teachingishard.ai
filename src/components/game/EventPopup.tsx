@@ -165,7 +165,12 @@ export function EventPopup({ event, onResolve, onDismiss }: EventPopupProps) {
           })}
         </div>
 
-        <div className="flex gap-2 pt-4 border-t">
+        <div className="flex flex-col gap-2 pt-4 border-t">
+          {!selectedChoice && (
+            <p className="text-sm text-muted-foreground text-center mb-2">
+              Select a response above to continue
+            </p>
+          )}
           <Button
             onClick={handleResolve}
             disabled={!selectedChoice || isResolving}

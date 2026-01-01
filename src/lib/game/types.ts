@@ -39,6 +39,7 @@ export interface Student {
   homeworkCompleted: boolean;
   homeworkQuality: number;
   attendanceToday: boolean;
+  lastPresentDay?: number; // Track when student was last present
 
   // Relationships
   friendIds: string[];

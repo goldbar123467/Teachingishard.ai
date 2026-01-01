@@ -350,6 +350,20 @@ export default function Home() {
     processSocialMedia();
   }, [turn.phase, processSocialMedia]);
 
+  // Handle Escape key for PhoneScreen modal
+  useEffect(() => {
+    if (!showPhoneModal) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowPhoneModal(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showPhoneModal]);
+
   // Show event popup when new events appear
   useEffect(() => {
     if (turn.activeEvents.length > 0 && !activeEvent) {

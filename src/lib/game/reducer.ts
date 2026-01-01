@@ -131,30 +131,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'LOAD_GAME': {
-      const loadedState = action.payload;
+      const loaded = action.payload;
 
-      // Ensure social media state exists (for backwards compatibility)
-      if (!loadedState.studentPhones) {
-        const studentPhones: Record<string, import('../students/socialMedia').StudentPhone> = {};
-        for (const student of loadedState.students) {
-          studentPhones[student.id] = initializeStudentPhone(student);
+      // Initialize student phones if missing (for backwards compatibility)
+      const studentPhones = loaded.studentPhones || (() => {
+        const phones: Record<string, import('../students/socialMedia').StudentPhone> = {};
+        for (const student of loaded.students) {
+          phones[student.id] = initializeStudentPhone(student);
         }
-        loadedState.studentPhones = studentPhones;
-      }
+        return phones;
+      })();
 
-      if (!loadedState.socialPosts) {
-        loadedState.socialPosts = [];
-      }
-
-      if (!loadedState.trendingPosts) {
-        loadedState.trendingPosts = [];
-      }
-
-      if (!loadedState.lastPostTimes) {
-        loadedState.lastPostTimes = {};
-      }
-
-      return loadedState;
+      // Return new object instead of mutating payload (immutability fix)
+      return {
+        ...loaded,
+        studentPhones,
+        socialPosts: loaded.socialPosts || [],
+        trendingPosts: loaded.trendingPosts || [],
+        lastPostTimes: loaded.lastPostTimes || {},
+      };
     }
 
     case 'ADVANCE_PHASE': {
@@ -211,6 +206,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const { day: nextDay, isNewWeek } = getNextDay(state.turn.dayOfWeek);
       const nextWeek = isNewWeek ? state.turn.week + 1 : state.turn.week;
 
+      // Calculate next turn number for tracking attendance
+      const nextTurnNumber = (nextWeek - 1) * 5 + DAY_ORDER.indexOf(nextDay) + 1;
+
       // Reset students for new day using behavior system
       const refreshedStudents = state.students.map(student => {
         // Calculate homework completion with detailed simulation
@@ -239,9 +237,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           academicBoost = hwBonus * (homeworkResult.quality / 100);
         }
 
+        // Determine attendance and track last present day
+        const willAttend = Math.random() > 0.05; // 95% attendance
+
         return {
           ...recoveredStudent,
-          attendanceToday: Math.random() > 0.05, // 95% attendance
+          attendanceToday: willAttend,
+          lastPresentDay: willAttend ? nextTurnNumber : student.lastPresentDay,
           homeworkCompleted: homeworkResult.completed,
           homeworkQuality: homeworkResult.quality,
           mood: finalMood,
@@ -249,10 +251,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         };
       });
 
-      // Teacher recovery
+      // Teacher recovery - dynamic recovery based on exhaustion level
+      const recoveryAmount = state.teacher.energy < 30 ? 60 : state.teacher.energy < 50 ? 50 : 40;
       const refreshedTeacher = {
         ...state.teacher,
-        energy: Math.min(100, state.teacher.energy + 25),
+        energy: Math.min(100, state.teacher.energy + recoveryAmount),
       };
 
       // Advance school year day
@@ -356,12 +359,29 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       const { studentId, action: interactionAction } = action.payload;
 
+      // Calculate current turn number for makeup work check
+      const currentTurn = (state.turn.week - 1) * 5 + DAY_ORDER.indexOf(state.turn.dayOfWeek) + 1;
+
       const updatedStudents = state.students.map(student => {
         if (student.id !== studentId) return student;
 
+        // Check if student needs makeup work (absent 3+ days)
+        const daysAbsent = currentTurn - (student.lastPresentDay || 0);
+        const needsMakeupWork = daysAbsent >= 3;
+
         // Use behavior system for interaction effects
         if (interactionAction === 'praise' || interactionAction === 'help' || interactionAction === 'redirect') {
-          return applyInteractionEffect(student, interactionAction);
+          const baseEffect = applyInteractionEffect(student, interactionAction);
+
+          // Add makeup work bonus if applicable
+          if (needsMakeupWork && interactionAction === 'help') {
+            return {
+              ...baseEffect,
+              academicLevel: Math.min(100, baseEffect.academicLevel + 10),
+            };
+          }
+
+          return baseEffect;
         }
         return student;
       });
@@ -505,6 +525,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           i.participants.includes(student.id)
         );
 
+        // Build updated friend and rival lists (immutability fix)
+        const friendsList = new Set(student.friendIds);
+        const rivalsList = new Set(student.rivalIds);
+
         for (const interaction of relevantInteractions) {
           // Find the other participant(s)
           const otherParticipants = interaction.participants.filter(id => id !== student.id);
@@ -517,9 +541,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             updatedFriendshipStrengths[otherId] = newStrength;
 
             // Update friendIds and rivalIds based on strength
-            const friendsList = new Set(student.friendIds);
-            const rivalsList = new Set(student.rivalIds);
-
             if (newStrength > 40 && !friendsList.has(otherId)) {
               friendsList.add(otherId);
               rivalsList.delete(otherId); // Can't be both
@@ -531,9 +552,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               friendsList.delete(otherId);
               rivalsList.delete(otherId);
             }
-
-            student.friendIds = Array.from(friendsList);
-            student.rivalIds = Array.from(rivalsList);
           }
         }
 
@@ -557,6 +575,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           clique: newClique,
           socialEnergy: newSocialEnergy,
           friendshipStrengths: updatedFriendshipStrengths,
+          friendIds: Array.from(friendsList),
+          rivalIds: Array.from(rivalsList),
         };
       });
 
@@ -682,10 +702,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         energy: Math.max(0, state.teacher.energy - result.energyCost),
       };
 
-      // Update lesson status with new engagement
-      const classEngagement = updatedStudents
-        .filter(s => s.attendanceToday)
-        .reduce((sum, s) => sum + s.engagement, 0) / updatedStudents.filter(s => s.attendanceToday).length;
+      // Update lesson status with new engagement (division by zero fix)
+      const presentStudents = updatedStudents.filter(s => s.attendanceToday);
+      const classEngagement = presentStudents.length > 0
+        ? presentStudents.reduce((sum, s) => sum + s.engagement, 0) / presentStudents.length
+        : 50; // Default to 50 if no students present
 
       const updatedLessonStatus = {
         ...state.currentLessonStatus,
@@ -1199,7 +1220,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
-    default:
+    default: {
+      console.warn(`[REDUCER] Unknown action type:`, action);
       return state;
+    }
   }
 }
