@@ -90,37 +90,44 @@
 }
 
 .dark {
-  --background: oklch(0.1 0.02 270);
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.15 0.02 270);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.15 0.02 270);
-  --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.7 0.22 270);
+  /* Warm dark theme - slate/zinc base with warm accents */
+  --background: oklch(0.13 0.015 260);
+  --foreground: oklch(0.93 0.01 60);
+  --card: oklch(0.17 0.015 260);
+  --card-foreground: oklch(0.93 0.01 60);
+  --popover: oklch(0.17 0.015 260);
+  --popover-foreground: oklch(0.93 0.01 60);
+  --primary: oklch(0.72 0.18 85);
   --primary-foreground: oklch(0.1 0 0);
-  --secondary: oklch(0.2 0.02 270);
-  --secondary-foreground: oklch(0.95 0 0);
-  --muted: oklch(0.2 0.02 270);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.25 0.03 200);
-  --accent-foreground: oklch(0.95 0 0);
-  --destructive: oklch(0.65 0.22 25);
-  --border: oklch(0.25 0.02 270);
-  --input: oklch(0.2 0.02 270);
-  --ring: oklch(0.7 0.22 270);
-  --chart-1: oklch(0.7 0.25 270);
-  --chart-2: oklch(0.7 0.2 200);
-  --chart-3: oklch(0.75 0.18 160);
+  --secondary: oklch(0.22 0.015 260);
+  --secondary-foreground: oklch(0.93 0.01 60);
+  --muted: oklch(0.22 0.015 260);
+  --muted-foreground: oklch(0.6 0.02 60);
+  --accent: oklch(0.28 0.025 260);
+  --accent-foreground: oklch(0.93 0.01 60);
+  --destructive: oklch(0.6 0.22 25);
+  --border: oklch(0.28 0.015 260);
+  --input: oklch(0.22 0.015 260);
+  --ring: oklch(0.72 0.18 85);
+  --chart-1: oklch(0.72 0.18 85);
+  --chart-2: oklch(0.7 0.2 160);
+  --chart-3: oklch(0.68 0.18 200);
   --chart-4: oklch(0.7 0.22 320);
-  --chart-5: oklch(0.75 0.2 80);
-  --sidebar: oklch(0.12 0.02 270);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.7 0.22 270);
+  --chart-5: oklch(0.65 0.22 25);
+  --sidebar: oklch(0.12 0.015 260);
+  --sidebar-foreground: oklch(0.93 0.01 60);
+  --sidebar-primary: oklch(0.72 0.18 85);
   --sidebar-primary-foreground: oklch(0.1 0 0);
-  --sidebar-accent: oklch(0.2 0.03 270);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(0.25 0.02 270);
-  --sidebar-ring: oklch(0.7 0.22 270);
+  --sidebar-accent: oklch(0.22 0.02 260);
+  --sidebar-accent-foreground: oklch(0.93 0.01 60);
+  --sidebar-border: oklch(0.28 0.015 260);
+  --sidebar-ring: oklch(0.72 0.18 85);
+
+  /* Game-specific warm colors */
+  --warm-amber: oklch(0.72 0.18 85);
+  --warm-orange: oklch(0.68 0.2 50);
+  --warm-emerald: oklch(0.7 0.17 160);
+  --soft-violet: oklch(0.65 0.2 285);
 }
 
 /* Gradient Glow Utility */
@@ -1206,4 +1213,150 @@ html {
 .drama-post-card:hover {
   transform: translateX(2px);
   box-shadow: -4px 0 0 0 var(--drama-accent);
+}
+
+/* ========== AMBIENT FLOATING PARTICLES ========== */
+@keyframes float-particle {
+  0% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-20vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes float-drift {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(20px);
+  }
+}
+
+@keyframes glow-soft {
+  0%, 100% {
+    opacity: 0.3;
+    filter: blur(1px);
+  }
+  50% {
+    opacity: 0.6;
+    filter: blur(2px);
+  }
+}
+
+.particles-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: float-particle linear infinite, float-drift ease-in-out infinite;
+}
+
+.particle-amber {
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.8) 0%, rgba(251, 191, 36, 0) 70%);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+}
+
+.particle-emerald {
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.8) 0%, rgba(52, 211, 153, 0) 70%);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+}
+
+.particle-violet {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.8) 0%, rgba(139, 92, 246, 0) 70%);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+}
+
+.particle-orange {
+  background: radial-gradient(circle, rgba(251, 146, 60, 0.8) 0%, rgba(251, 146, 60, 0) 70%);
+  box-shadow: 0 0 10px rgba(251, 146, 60, 0.4);
+}
+
+/* Subtle background ambient glow for game atmosphere */
+.ambient-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba(251, 191, 36, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(52, 211, 153, 0.04) 0%, transparent 60%);
+}
+
+/* Enhanced card hover with warm glow */
+.warm-card-glow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.warm-card-glow:hover {
+  box-shadow:
+    0 10px 30px -10px rgba(0, 0, 0, 0.5),
+    0 0 20px -5px rgba(251, 191, 36, 0.15),
+    0 0 0 1px rgba(251, 191, 36, 0.1);
+}
+
+/* Status indicator pulsing */
+@keyframes status-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 var(--pulse-color, rgba(52, 211, 153, 0.5));
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 4px var(--pulse-color, rgba(52, 211, 153, 0));
+  }
+}
+
+.status-pulsing {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+.status-pulsing-fast {
+  animation: status-pulse 1s ease-in-out infinite;
+}
+
+/* Progress bar fill animation */
+@keyframes progress-fill {
+  from {
+    width: 0%;
+  }
+}
+
+.progress-animated {
+  animation: progress-fill 0.8s ease-out;
+}
+
+/* Smooth backdrop blur for modals */
+.backdrop-blur-warm {
+  backdrop-filter: blur(12px) saturate(150%);
+  background: rgba(15, 15, 20, 0.85);
+}
+
+/* Interactive element transitions */
+.interactive-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.interactive-lift:hover {
+  transform: translateY(-2px);
+}
+
+.interactive-lift:active {
+  transform: translateY(0);
 }

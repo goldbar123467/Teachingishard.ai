@@ -24,69 +24,81 @@ function getDiceBearUrl(seed: string): string {
   return `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}`;
 }
 
-// Gradient colors for traits
-const TRAIT_GRADIENTS: Record<string, { border: string; glow: string; ring: string }> = {
+// Gradient colors for traits - enhanced for dark theme
+const TRAIT_GRADIENTS: Record<string, { border: string; glow: string; ring: string; hoverGlow: string }> = {
   curious: {
     border: 'from-blue-400 to-cyan-400',
-    glow: 'hover:shadow-blue-500/20',
-    ring: 'ring-blue-400/30 group-hover:ring-blue-400/60',
+    glow: 'hover:shadow-blue-500/30 dark:hover:shadow-blue-500/40',
+    ring: 'ring-blue-400/30 group-hover:ring-blue-400/70',
+    hoverGlow: 'hover:shadow-[0_0_20px_rgba(96,165,250,0.3)]',
   },
   shy: {
     border: 'from-violet-400 to-purple-400',
-    glow: 'hover:shadow-violet-500/20',
-    ring: 'ring-violet-400/30 group-hover:ring-violet-400/60',
+    glow: 'hover:shadow-violet-500/30 dark:hover:shadow-violet-500/40',
+    ring: 'ring-violet-400/30 group-hover:ring-violet-400/70',
+    hoverGlow: 'hover:shadow-[0_0_20px_rgba(167,139,250,0.3)]',
   },
   outgoing: {
     border: 'from-amber-400 to-yellow-400',
-    glow: 'hover:shadow-amber-500/20',
-    ring: 'ring-amber-400/30 group-hover:ring-amber-400/60',
+    glow: 'hover:shadow-amber-500/30 dark:hover:shadow-amber-500/40',
+    ring: 'ring-amber-400/30 group-hover:ring-amber-400/70',
+    hoverGlow: 'hover:shadow-[0_0_20px_rgba(251,191,36,0.3)]',
   },
   distracted: {
     border: 'from-orange-400 to-red-400',
-    glow: 'hover:shadow-orange-500/20',
-    ring: 'ring-orange-400/30 group-hover:ring-orange-400/60',
+    glow: 'hover:shadow-orange-500/30 dark:hover:shadow-orange-500/40',
+    ring: 'ring-orange-400/30 group-hover:ring-orange-400/70',
+    hoverGlow: 'hover:shadow-[0_0_20px_rgba(251,146,60,0.3)]',
   },
   perfectionist: {
     border: 'from-emerald-400 to-green-400',
-    glow: 'hover:shadow-emerald-500/20',
-    ring: 'ring-emerald-400/30 group-hover:ring-emerald-400/60',
+    glow: 'hover:shadow-emerald-500/30 dark:hover:shadow-emerald-500/40',
+    ring: 'ring-emerald-400/30 group-hover:ring-emerald-400/70',
+    hoverGlow: 'hover:shadow-[0_0_20px_rgba(52,211,153,0.3)]',
   },
   creative: {
     border: 'from-pink-400 to-rose-400',
-    glow: 'hover:shadow-pink-500/20',
-    ring: 'ring-pink-400/30 group-hover:ring-pink-400/60',
+    glow: 'hover:shadow-pink-500/30 dark:hover:shadow-pink-500/40',
+    ring: 'ring-pink-400/30 group-hover:ring-pink-400/70',
+    hoverGlow: 'hover:shadow-[0_0_20px_rgba(244,114,182,0.3)]',
   },
   analytical: {
     border: 'from-cyan-400 to-teal-400',
-    glow: 'hover:shadow-cyan-500/20',
-    ring: 'ring-cyan-400/30 group-hover:ring-cyan-400/60',
+    glow: 'hover:shadow-cyan-500/30 dark:hover:shadow-cyan-500/40',
+    ring: 'ring-cyan-400/30 group-hover:ring-cyan-400/70',
+    hoverGlow: 'hover:shadow-[0_0_20px_rgba(34,211,238,0.3)]',
   },
   athletic: {
     border: 'from-lime-400 to-green-400',
-    glow: 'hover:shadow-lime-500/20',
-    ring: 'ring-lime-400/30 group-hover:ring-lime-400/60',
+    glow: 'hover:shadow-lime-500/30 dark:hover:shadow-lime-500/40',
+    ring: 'ring-lime-400/30 group-hover:ring-lime-400/70',
+    hoverGlow: 'hover:shadow-[0_0_20px_rgba(163,230,53,0.3)]',
   },
   leader: {
     border: 'from-yellow-400 to-amber-400',
-    glow: 'hover:shadow-yellow-500/20',
-    ring: 'ring-yellow-400/30 group-hover:ring-yellow-400/60',
+    glow: 'hover:shadow-yellow-500/30 dark:hover:shadow-yellow-500/40',
+    ring: 'ring-yellow-400/30 group-hover:ring-yellow-400/70',
+    hoverGlow: 'hover:shadow-[0_0_20px_rgba(250,204,21,0.3)]',
   },
   helper: {
     border: 'from-rose-400 to-pink-400',
-    glow: 'hover:shadow-rose-500/20',
-    ring: 'ring-rose-400/30 group-hover:ring-rose-400/60',
+    glow: 'hover:shadow-rose-500/30 dark:hover:shadow-rose-500/40',
+    ring: 'ring-rose-400/30 group-hover:ring-rose-400/70',
+    hoverGlow: 'hover:shadow-[0_0_20px_rgba(251,113,133,0.3)]',
   },
   social: {
     border: 'from-fuchsia-400 to-purple-400',
-    glow: 'hover:shadow-fuchsia-500/20',
-    ring: 'ring-fuchsia-400/30 group-hover:ring-fuchsia-400/60',
+    glow: 'hover:shadow-fuchsia-500/30 dark:hover:shadow-fuchsia-500/40',
+    ring: 'ring-fuchsia-400/30 group-hover:ring-fuchsia-400/70',
+    hoverGlow: 'hover:shadow-[0_0_20px_rgba(232,121,249,0.3)]',
   },
 };
 
 const DEFAULT_GRADIENT = {
   border: 'from-gray-400 to-slate-400',
-  glow: 'hover:shadow-gray-500/20',
+  glow: 'hover:shadow-gray-500/20 dark:hover:shadow-gray-500/30',
   ring: 'ring-gray-400/30 group-hover:ring-gray-400/60',
+  hoverGlow: 'hover:shadow-[0_0_20px_rgba(148,163,184,0.2)]',
 };
 
 // Animation variants based on student state
@@ -190,11 +202,13 @@ export function StudentCard({ student, onClick, compact = false }: StudentCardPr
           )} />
         )}
         <Card className={cn(
-          'relative border-0 bg-card/80 backdrop-blur-sm',
+          'relative border-0 bg-card/90 backdrop-blur-sm',
+          'dark:bg-slate-800/80 dark:border dark:border-slate-700/50',
           // Only apply hover effects when student is present
-          student.attendanceToday && 'hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg',
+          student.attendanceToday && 'hover:scale-[1.02] active:scale-[0.98]',
           student.attendanceToday && traitStyle.glow,
-          'transition-all duration-200'
+          student.attendanceToday && traitStyle.hoverGlow,
+          'transition-all duration-300 ease-out'
         )}>
           <CardContent className="p-3">
             <div className="flex items-center gap-3">
@@ -260,10 +274,12 @@ export function StudentCard({ student, onClick, compact = false }: StudentCardPr
 
       <Card className={cn(
         'relative border-0 bg-card/95 backdrop-blur-sm overflow-hidden',
+        'dark:bg-slate-800/90 dark:border dark:border-slate-700/50',
         // Only apply hover effects when student is present
-        student.attendanceToday && 'hover:scale-[1.01] active:scale-[0.99] hover:shadow-xl',
+        student.attendanceToday && 'hover:scale-[1.01] active:scale-[0.99]',
         student.attendanceToday && traitStyle.glow,
-        'transition-all duration-200'
+        student.attendanceToday && traitStyle.hoverGlow,
+        'transition-all duration-300 ease-out'
       )}>
         {/* Subtle gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/[0.02] dark:to-white/[0.02] pointer-events-none" />

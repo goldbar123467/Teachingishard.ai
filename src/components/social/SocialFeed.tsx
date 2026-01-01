@@ -144,13 +144,13 @@ export function SocialFeed({
   };
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-background via-background to-muted/20 rounded-xl border border-border/50">
+    <div className="flex flex-col h-full bg-gradient-to-b from-slate-900/95 via-slate-900/90 to-slate-900/85 rounded-xl border border-slate-700/40 shadow-lg shadow-slate-900/50 backdrop-blur-sm">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="flex items-center justify-between px-4 py-4 border-b border-border/50 bg-gradient-to-r from-background to-muted/30"
+        className="flex items-center justify-between px-4 py-4 border-b border-slate-700/40 bg-gradient-to-r from-slate-900/80 to-slate-800/60"
       >
         <div className="flex items-center gap-2">
           <span className="text-2xl">📱</span>
@@ -173,7 +173,7 @@ export function SocialFeed({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3, delay: 0.1 }}
-        className="flex gap-2 px-4 py-3 border-b border-border/50 overflow-x-auto bg-muted/20 sticky top-0 z-10"
+        className="flex gap-2 px-4 py-3 border-b border-slate-700/40 overflow-x-auto bg-slate-800/40 sticky top-0 z-10"
       >
         {(Object.keys(filterConfig) as FilterTab[]).map((filter) => {
           const config = filterConfig[filter];
@@ -208,7 +208,7 @@ export function SocialFeed({
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
-          className="px-4 py-2 border-b border-border/50 bg-violet-50/50 dark:bg-violet-900/10"
+          className="px-4 py-2 border-b border-slate-700/40 bg-violet-900/20"
         >
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-semibold text-muted-foreground">🔥 Trending:</span>
@@ -344,7 +344,7 @@ export function SocialFeed({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8 }}
-        className="px-4 py-2 border-t border-border/50 text-center text-[10px] text-muted-foreground bg-muted/20"
+        className="px-4 py-2 border-t border-slate-700/40 text-center text-[10px] text-slate-500 bg-slate-800/30"
       >
         Refreshes as events happen
       </motion.div>

@@ -65,9 +65,12 @@ export function SocialPost({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: compact ? 1 : 1.01 }}
+      transition={{ duration: 0.2 }}
       className={cn(
-        'rounded-lg overflow-hidden',
-        !compact && 'bg-gradient-to-br to-slate-900/40 from-slate-800/60 border border-slate-700/50'
+        'rounded-2xl overflow-hidden backdrop-blur-sm transition-shadow duration-200',
+        !compact && 'bg-gradient-to-br from-slate-800/80 to-slate-900/60 border border-slate-700/40',
+        !compact && 'hover:border-slate-600/50 hover:shadow-lg hover:shadow-slate-900/50'
       )}
     >
       <div className={cn('p-3', compact && 'pb-2')}>

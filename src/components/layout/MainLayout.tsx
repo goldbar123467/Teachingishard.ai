@@ -20,8 +20,10 @@ export function MainLayout({ children, onSaveClick }: MainLayoutProps) {
       <AppSidebar />
       <SidebarInset>
         <AppHeader onSaveClick={onSaveClick} />
-        <main className="flex-1 overflow-auto">
-          <div className="mesh-gradient-subtle min-h-[calc(100vh-3.5rem)]">
+        <main className="flex-1 overflow-auto relative">
+          {/* Ambient background glow for game atmosphere */}
+          <div className="ambient-glow" aria-hidden="true" />
+          <div className="mesh-gradient-subtle min-h-[calc(100vh-3.5rem)] relative z-[1]">
             {children}
           </div>
         </main>

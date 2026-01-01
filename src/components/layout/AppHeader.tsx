@@ -54,7 +54,7 @@ export function AppHeader({ onSaveClick }: AppHeaderProps) {
   const currentPhase = state.turn.phase;
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b bg-background/80 backdrop-blur-sm transition-[width,height] ease-linear">
+    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 dark:border-slate-700/50 bg-background/80 dark:bg-slate-900/80 backdrop-blur-md transition-[width,height] ease-linear shadow-sm dark:shadow-none">
       <div className="flex w-full items-center gap-2 px-4">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
