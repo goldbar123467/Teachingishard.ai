@@ -58,20 +58,25 @@ function TestScoreChart({ scores }: { scores: number[] }) {
   const barWidth = Math.min(40, 200 / scores.length);
 
   return (
-    <div className="flex items-end justify-center gap-1 h-24">
+    <div className="flex items-end justify-center gap-1.5 h-24 p-2 bg-muted/30 rounded-lg">
       {scores.map((score, i) => (
         <div key={i} className="flex flex-col items-center gap-1">
           <div
             className={cn(
-              'rounded-t transition-all',
-              score >= 70 ? 'bg-green-500' : score >= 50 ? 'bg-amber-500' : 'bg-red-500'
+              'score-bar-animated rounded-t shadow-sm',
+              score >= 70
+                ? 'bg-gradient-to-t from-green-500 to-emerald-400'
+                : score >= 50
+                ? 'bg-gradient-to-t from-amber-500 to-yellow-400'
+                : 'bg-gradient-to-t from-red-500 to-rose-400'
             )}
             style={{
               width: `${barWidth}px`,
               height: `${(score / maxScore) * 80}px`,
+              animationDelay: `${i * 0.05}s`,
             }}
           />
-          <span className="text-[10px] text-muted-foreground">{score}</span>
+          <span className="text-[10px] font-medium text-muted-foreground tabular-nums">{score}</span>
         </div>
       ))}
     </div>
@@ -105,19 +110,19 @@ function RelationshipsList({
         <div
           key={student.id}
           className={cn(
-            'flex items-center gap-2 px-2 py-1 rounded-full text-sm',
+            'relationship-pill flex items-center gap-2 px-3 py-1.5 rounded-full text-sm cursor-default border',
             type === 'friend'
-              ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-              : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+              ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800'
+              : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'
           )}
         >
-          <Avatar className="h-5 w-5">
+          <Avatar className="h-6 w-6 ring-1 ring-white dark:ring-zinc-800">
             <AvatarImage src={getDiceBearUrl(student.avatarSeed)} />
             <AvatarFallback className="text-[10px]">
               {getStudentInitials(student)}
             </AvatarFallback>
           </Avatar>
-          <span>{student.firstName}</span>
+          <span className="font-medium">{student.firstName}</span>
         </div>
       ))}
     </div>
@@ -146,7 +151,7 @@ export function StudentDetailModal({
 
         {/* Header with avatar and basic info */}
         <div className="flex items-start gap-4">
-          <Avatar className="h-20 w-20 ring-2 ring-offset-2 ring-offset-background ring-primary/20">
+          <Avatar className="modal-avatar-entrance h-20 w-20 ring-2 ring-offset-2 ring-offset-background ring-primary/20 shadow-lg">
             <AvatarImage src={getDiceBearUrl(student.avatarSeed)} alt={getStudentFullName(student)} />
             <AvatarFallback className="text-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold">
               {getStudentInitials(student)}
@@ -210,36 +215,44 @@ export function StudentDetailModal({
             {/* Core stats */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-3">
-                <PerformanceBar
-                  value={student.academicLevel}
-                  label="Academic Level"
-                  showValue
-                  size="md"
-                  variant="academic"
-                />
-                <PerformanceBar
-                  value={student.engagement}
-                  label="Engagement"
-                  showValue
-                  size="md"
-                  variant="academic"
-                />
+                <div className="stat-row">
+                  <PerformanceBar
+                    value={student.academicLevel}
+                    label="Academic Level"
+                    showValue
+                    size="md"
+                    variant="academic"
+                  />
+                </div>
+                <div className="stat-row">
+                  <PerformanceBar
+                    value={student.engagement}
+                    label="Engagement"
+                    showValue
+                    size="md"
+                    variant="academic"
+                  />
+                </div>
               </div>
               <div className="space-y-3">
-                <PerformanceBar
-                  value={student.energy}
-                  label="Energy"
-                  showValue
-                  size="md"
-                  variant="energy"
-                />
-                <PerformanceBar
-                  value={student.socialSkills}
-                  label="Social Skills"
-                  showValue
-                  size="md"
-                  variant="academic"
-                />
+                <div className="stat-row">
+                  <PerformanceBar
+                    value={student.energy}
+                    label="Energy"
+                    showValue
+                    size="md"
+                    variant="energy"
+                  />
+                </div>
+                <div className="stat-row">
+                  <PerformanceBar
+                    value={student.socialSkills}
+                    label="Social Skills"
+                    showValue
+                    size="md"
+                    variant="academic"
+                  />
+                </div>
               </div>
             </div>
 
@@ -312,19 +325,22 @@ export function StudentDetailModal({
 
             {/* Behavior record */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+              <div className={cn(
+                'p-4 rounded-xl bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/30 dark:to-rose-900/20 border border-red-100 dark:border-red-900/50',
+                student.behaviorIncidents >= 3 && 'incident-card-high'
+              )}>
+                <div className="text-3xl font-bold text-red-600 dark:text-red-400 tabular-nums">
                   {student.behaviorIncidents}
                 </div>
-                <div className="text-sm text-red-700 dark:text-red-300">
+                <div className="text-sm font-medium text-red-700 dark:text-red-300">
                   Behavior Incidents
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/20 border border-green-100 dark:border-green-900/50">
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400 tabular-nums">
                   {student.positiveNotes}
                 </div>
-                <div className="text-sm text-green-700 dark:text-green-300">
+                <div className="text-sm font-medium text-green-700 dark:text-green-300">
                   Positive Notes
                 </div>
               </div>

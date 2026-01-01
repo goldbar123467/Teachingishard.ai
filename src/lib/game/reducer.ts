@@ -26,6 +26,7 @@ import {
   createLessonStatus,
   getPivotOptions,
 } from './lessonPivot';
+import { duplicateLessonPlan } from './lessonPlan';
 
 function calculateClassAverage(students: GameState['students']): number {
   if (students.length === 0) return 0;
@@ -74,6 +75,8 @@ export function createInitialState(difficulty: GameState['difficulty'] = 'normal
     currentTimeBlock: null,
     timeTracker: null,
     currentLessonStatus: null,
+    // Lesson plans
+    lessonPlans: [],
     classAverage: calculateClassAverage(students),
     difficulty,
     autoSaveEnabled: true,
@@ -719,6 +722,61 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ? { ...block, dayOfWeek: newDayOfWeek, startTime: newStartTime }
           : block
       );
+      return {
+        ...state,
+        currentSchedule: {
+          ...state.currentSchedule,
+          blocks: updatedBlocks,
+        },
+      };
+    }
+
+    case 'CREATE_LESSON_PLAN': {
+      return {
+        ...state,
+        lessonPlans: [...state.lessonPlans, action.payload],
+      };
+    }
+
+    case 'UPDATE_LESSON_PLAN': {
+      const updatedPlans = state.lessonPlans.map(plan =>
+        plan.id === action.payload.id ? action.payload : plan
+      );
+      return {
+        ...state,
+        lessonPlans: updatedPlans,
+      };
+    }
+
+    case 'DELETE_LESSON_PLAN': {
+      const { planId } = action.payload;
+      return {
+        ...state,
+        lessonPlans: state.lessonPlans.filter(plan => plan.id !== planId),
+      };
+    }
+
+    case 'DUPLICATE_LESSON_PLAN': {
+      const { planId } = action.payload;
+      const originalPlan = state.lessonPlans.find(plan => plan.id === planId);
+      if (!originalPlan) return state;
+
+      const duplicatedPlan = duplicateLessonPlan(originalPlan);
+      return {
+        ...state,
+        lessonPlans: [...state.lessonPlans, duplicatedPlan],
+      };
+    }
+
+    case 'ASSIGN_PLAN_TO_BLOCK': {
+      const { planId, blockId } = action.payload;
+
+      if (!state.currentSchedule) return state;
+
+      const updatedBlocks = state.currentSchedule.blocks.map(block =>
+        block.id === blockId ? { ...block, lessonId: planId } : block
+      );
+
       return {
         ...state,
         currentSchedule: {

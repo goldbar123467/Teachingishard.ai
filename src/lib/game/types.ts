@@ -197,6 +197,9 @@ export interface GameState {
   // Lesson tracking
   currentLessonStatus: import('./lessonPivot').LessonStatus | null;
 
+  // Lesson plans
+  lessonPlans: import('./lessonPlan').LessonPlan[];
+
   classAverage: number;
 
   difficulty: 'easy' | 'normal' | 'hard';
@@ -229,4 +232,10 @@ export type GameAction =
   // Time management actions
   | { type: 'HANDLE_EARLY_FINISH'; payload: { optionId: string } }
   | { type: 'HANDLE_OVERTIME'; payload: { optionId: string } }
-  | { type: 'MOVE_TIME_BLOCK'; payload: { blockId: string; newDayOfWeek: number; newStartTime: string } };
+  | { type: 'MOVE_TIME_BLOCK'; payload: { blockId: string; newDayOfWeek: number; newStartTime: string } }
+  // Lesson plan actions
+  | { type: 'CREATE_LESSON_PLAN'; payload: import('./lessonPlan').LessonPlan }
+  | { type: 'UPDATE_LESSON_PLAN'; payload: import('./lessonPlan').LessonPlan }
+  | { type: 'DELETE_LESSON_PLAN'; payload: { planId: string } }
+  | { type: 'DUPLICATE_LESSON_PLAN'; payload: { planId: string } }
+  | { type: 'ASSIGN_PLAN_TO_BLOCK'; payload: { planId: string; blockId: string } };

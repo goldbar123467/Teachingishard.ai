@@ -5,6 +5,7 @@ import {
   getRandomTrait,
   PERSONALITY_PROFILES,
 } from './personalities';
+import { calculateFriendshipCompatibility } from './socialEngine';
 
 function randomInRange(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -54,6 +55,12 @@ function generateStudent(usedNames: Set<string>): Student {
     friendIds: [],
     rivalIds: [],
 
+    // Social dynamics (initialized)
+    popularity: socialSkills, // Start with social skills as base
+    clique: null, // Will be assigned by socialEngine
+    socialEnergy: primaryTrait === 'shy' ? 50 : primaryTrait === 'outgoing' || primaryTrait === 'social' ? 80 : 65,
+    friendshipStrengths: {}, // Will be populated as friendships form
+
     testScores: [],
     behaviorIncidents: 0,
     positiveNotes: 0,
@@ -67,40 +74,50 @@ function generateStudent(usedNames: Set<string>): Student {
 }
 
 function generateFriendships(students: Student[]): void {
-  // Each student gets 1-3 friends
+  // Each student gets 1-3 friends based on compatibility
   for (const student of students) {
     const numFriends = randomInRange(1, 3);
     const potentialFriends = students.filter(
       s => s.id !== student.id && !student.friendIds.includes(s.id)
     );
 
-    // Prefer students with similar traits or social skills
+    // Sort by compatibility score
     const sorted = potentialFriends.sort((a, b) => {
-      const aMatch = a.primaryTrait === student.primaryTrait ? 20 : 0;
-      const bMatch = b.primaryTrait === student.primaryTrait ? 20 : 0;
-      const aSocial = Math.abs(a.socialSkills - student.socialSkills);
-      const bSocial = Math.abs(b.socialSkills - student.socialSkills);
-      return (bMatch - bSocial) - (aMatch - aSocial);
+      const aCompat = calculateFriendshipCompatibility(student, a);
+      const bCompat = calculateFriendshipCompatibility(student, b);
+      return bCompat - aCompat;
     });
 
     const friends = sorted.slice(0, numFriends);
     for (const friend of friends) {
+      const compatibility = calculateFriendshipCompatibility(student, friend);
+      const initialStrength = Math.max(20, Math.min(60, 40 + compatibility)); // 20-60 range
+
       if (!student.friendIds.includes(friend.id)) {
         student.friendIds.push(friend.id);
+        student.friendshipStrengths[friend.id] = initialStrength;
       }
       // Friendship is mutual
       if (!friend.friendIds.includes(student.id)) {
         friend.friendIds.push(student.id);
+        friend.friendshipStrengths[student.id] = initialStrength;
       }
     }
   }
 
-  // Some students have 0-1 rivals (10% chance per pair)
+  // Some students have 0-1 rivals (based on negative compatibility)
   for (let i = 0; i < students.length; i++) {
     for (let j = i + 1; j < students.length; j++) {
-      if (Math.random() < 0.05) {
+      const compatibility = calculateFriendshipCompatibility(students[i], students[j]);
+      // If very incompatible, small chance of rivalry
+      if (compatibility < -15 && Math.random() < 0.1) {
         students[i].rivalIds.push(students[j].id);
         students[j].rivalIds.push(students[i].id);
+
+        // Set negative friendship strength
+        const rivalryStrength = Math.max(-60, Math.min(-20, compatibility - 20));
+        students[i].friendshipStrengths[students[j].id] = rivalryStrength;
+        students[j].friendshipStrengths[students[i].id] = rivalryStrength;
       }
     }
   }

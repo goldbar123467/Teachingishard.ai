@@ -30,6 +30,8 @@ interface SaveLoadModalProps {
   onLoad: (state: GameState) => void;
   onSave?: () => void;
   trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function SaveLoadModal({
@@ -37,8 +39,12 @@ export function SaveLoadModal({
   onLoad,
   onSave,
   trigger,
+  open: controlledOpen,
+  onOpenChange,
 }: SaveLoadModalProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
   const [saves, setSaves] = useState<SaveMetadata[]>([]);
   const [activeTab, setActiveTab] = useState<'save' | 'load'>('save');
   const [saveName, setSaveName] = useState('');

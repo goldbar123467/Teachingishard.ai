@@ -22,36 +22,42 @@ tmux new-session -d -s darkridge -c "$PROJECT_DIR"
 tmux new-session -d -s fuchsia -c "$PROJECT_DIR"
 tmux new-session -d -s silent -c "$PROJECT_DIR"
 
+# Function to start an agent with permission dialog handling
+start_agent() {
+  local session=$1
+  local prompt=$2
+
+  echo "   Starting $session..."
+
+  # Send the claude command
+  tmux send-keys -t $session "claude --dangerously-skip-permissions \"$prompt\"" Enter
+
+  # Wait for permission dialog to render
+  sleep 4
+
+  # Send Down arrow to select "Yes, I accept"
+  tmux send-keys -t $session Down
+
+  # Wait for selection to register
+  sleep 1
+
+  # Send Enter to confirm
+  tmux send-keys -t $session Enter
+
+  # Brief pause before next agent
+  sleep 2
+}
+
 # Start agents with their roles
 echo "🤖 Launching agents..."
 
-tmux send-keys -t cobalt "claude --dangerously-skip-permissions \"I am CobaltDeer, the Planner agent. My responsibilities:
-1. Check inbox: mcp__mcp-agent-mail__fetch_inbox (project_key=/home/clark/classroom-sim, agent_name=CobaltDeer)
-2. Coordinate team tasks and architecture decisions
-3. Break down features into actionable tasks
-4. Send task assignments via mcp__mcp-agent-mail__send_message
-Always check inbox first, then plan and delegate.\"" Enter
+start_agent "cobalt" "I am CobaltDeer, the Planner agent. FIRST: Use mcp__mcp-agent-mail__fetch_inbox to check messages. My role: Coordinate team, plan architecture, delegate tasks via mcp__mcp-agent-mail__send_message."
 
-tmux send-keys -t darkridge "claude --dangerously-skip-permissions \"I am DarkRidge, the Builder agent. My responsibilities:
-1. Check inbox: mcp__mcp-agent-mail__fetch_inbox (project_key=/home/clark/classroom-sim, agent_name=DarkRidge)
-2. Build Next.js/React components using shadcn
-3. Implement features assigned by CobaltDeer
-4. Reply with progress via mcp__mcp-agent-mail__reply_message
-Always check inbox first, then build assigned components.\"" Enter
+start_agent "darkridge" "I am DarkRidge, the Builder agent. FIRST: Use mcp__mcp-agent-mail__fetch_inbox to check messages. My role: Build Next.js/React components, implement features, report progress."
 
-tmux send-keys -t fuchsia "claude --dangerously-skip-permissions \"I am FuchsiaGlen, the Styler agent. My responsibilities:
-1. Check inbox: mcp__mcp-agent-mail__fetch_inbox (project_key=/home/clark/classroom-sim, agent_name=FuchsiaGlen)
-2. Style components with Tailwind CSS
-3. Create animations and responsive designs
-4. Reply with progress via mcp__mcp-agent-mail__reply_message
-Always check inbox first, then style assigned components.\"" Enter
+start_agent "fuchsia" "I am FuchsiaGlen, the Styler agent. FIRST: Use mcp__mcp-agent-mail__fetch_inbox to check messages. My role: Tailwind CSS styling, animations, responsive design."
 
-tmux send-keys -t silent "claude --dangerously-skip-permissions \"I am SilentCompass, the Tester agent. My responsibilities:
-1. Check inbox: mcp__mcp-agent-mail__fetch_inbox (project_key=/home/clark/classroom-sim, agent_name=SilentCompass)
-2. Run builds and tests: npm run build, npm test
-3. Report errors to the team via agent-mail
-4. Verify implementations work correctly
-Always check inbox first, then test and verify.\"" Enter
+start_agent "silent" "I am SilentCompass, the Tester agent. FIRST: Use mcp__mcp-agent-mail__fetch_inbox to check messages. My role: Run builds/tests, verify implementations, report errors."
 
 # Start web terminals
 echo "🌐 Starting web terminals..."

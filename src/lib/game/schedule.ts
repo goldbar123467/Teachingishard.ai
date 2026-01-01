@@ -22,7 +22,9 @@ export interface TimeBlock {
   subject: SubjectType;
   startTime: string; // "8:30 AM" format
   duration: number; // minutes
-  lessonId?: string; // Reference to Lesson
+  dayOfWeek: number; // 0 = Monday, 4 = Friday
+  lessonId?: string; // Reference to Lesson (legacy)
+  lessonPlanId?: string; // Reference to LessonPlan
   status: BlockStatus;
 }
 
@@ -138,6 +140,7 @@ export function generateDefaultSchedule(
   dayOfWeek: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday'
 ): DailySchedule {
   const special = SPECIALS_ROTATION[dayOfWeek];
+  const dayIndex = { monday: 0, tuesday: 1, wednesday: 2, thursday: 3, friday: 4 }[dayOfWeek];
 
   const blocks: TimeBlock[] = [
     {
@@ -145,6 +148,7 @@ export function generateDefaultSchedule(
       subject: 'reading',
       startTime: '8:30 AM',
       duration: 15,
+      dayOfWeek: dayIndex,
       status: 'planned',
     },
     {
@@ -152,6 +156,7 @@ export function generateDefaultSchedule(
       subject: 'reading',
       startTime: '8:45 AM',
       duration: 45,
+      dayOfWeek: dayIndex,
       status: 'planned',
     },
     {
@@ -159,6 +164,7 @@ export function generateDefaultSchedule(
       subject: 'reading',
       startTime: '9:30 AM',
       duration: 30,
+      dayOfWeek: dayIndex,
       status: 'planned',
     },
     {
@@ -166,6 +172,7 @@ export function generateDefaultSchedule(
       subject: 'recess',
       startTime: '10:00 AM',
       duration: 15,
+      dayOfWeek: dayIndex,
       status: 'planned',
     },
     {
@@ -173,6 +180,7 @@ export function generateDefaultSchedule(
       subject: 'math',
       startTime: '10:15 AM',
       duration: 60,
+      dayOfWeek: dayIndex,
       status: 'planned',
     },
     {
@@ -180,6 +188,7 @@ export function generateDefaultSchedule(
       subject: 'lunch',
       startTime: '11:15 AM',
       duration: 30,
+      dayOfWeek: dayIndex,
       status: 'planned',
     },
     {
@@ -187,6 +196,7 @@ export function generateDefaultSchedule(
       subject: special,
       startTime: '11:45 AM',
       duration: 45,
+      dayOfWeek: dayIndex,
       status: 'planned',
     },
     {
@@ -194,6 +204,7 @@ export function generateDefaultSchedule(
       subject: 'science',
       startTime: '12:30 PM',
       duration: 45,
+      dayOfWeek: dayIndex,
       status: 'planned',
     },
     {
@@ -201,6 +212,7 @@ export function generateDefaultSchedule(
       subject: 'social-studies',
       startTime: '1:15 PM',
       duration: 30,
+      dayOfWeek: dayIndex,
       status: 'planned',
     },
     {
@@ -208,6 +220,7 @@ export function generateDefaultSchedule(
       subject: 'reading',
       startTime: '1:45 PM',
       duration: 30,
+      dayOfWeek: dayIndex,
       status: 'planned',
     },
     {
@@ -215,6 +228,7 @@ export function generateDefaultSchedule(
       subject: 'reading',
       startTime: '2:15 PM',
       duration: 15,
+      dayOfWeek: dayIndex,
       status: 'planned',
     },
   ];

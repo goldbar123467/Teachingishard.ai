@@ -53,13 +53,17 @@ export function EventPopup({ event, onResolve, onDismiss }: EventPopupProps) {
   };
 
   const getEffectPreview = (choice: EventChoice) => {
-    const effects: string[] = [];
-    for (const effect of choice.effects) {
+    return choice.effects.map(effect => {
       const sign = effect.modifier > 0 ? '+' : '';
       const target = effect.target === 'student' ? '👤' : effect.target === 'class' ? '👥' : '🧑‍🏫';
-      effects.push(`${target} ${effect.attribute} ${sign}${effect.modifier}`);
-    }
-    return effects;
+      const isPositive = effect.modifier > 0;
+      const isNegative = effect.modifier < 0;
+      return {
+        text: `${target} ${effect.attribute} ${sign}${effect.modifier}`,
+        isPositive,
+        isNegative,
+      };
+    });
   };
 
   if (!event) return null;
@@ -68,11 +72,11 @@ export function EventPopup({ event, onResolve, onDismiss }: EventPopupProps) {
     <Sheet open={!!event} onOpenChange={(open) => !open && onDismiss?.()}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-lg overflow-y-auto"
+        className="w-full sm:max-w-lg overflow-y-auto event-popup-content"
       >
         <SheetHeader className="text-left pb-4">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">{getEventIcon(event.type)}</span>
+            <span className="text-2xl event-icon">{getEventIcon(event.type)}</span>
             <Badge
               variant="outline"
               className={cn(
@@ -96,61 +100,69 @@ export function EventPopup({ event, onResolve, onDismiss }: EventPopupProps) {
             How do you respond?
           </div>
 
-          {event.choices.map((choice) => (
-            <Card
-              key={choice.id}
-              className={cn(
-                'cursor-pointer transition-all duration-200',
-                selectedChoice === choice.id
-                  ? 'ring-2 ring-primary border-primary bg-primary/5'
-                  : 'hover:border-primary/50 hover:bg-accent/50'
-              )}
-              onClick={() => setSelectedChoice(choice.id)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div
-                    className={cn(
-                      'w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 transition-colors',
-                      selectedChoice === choice.id
-                        ? 'border-primary bg-primary'
-                        : 'border-muted-foreground/30'
-                    )}
-                  >
-                    {selectedChoice === choice.id && (
-                      <svg
-                        className="w-full h-full text-primary-foreground p-0.5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium">{choice.label}</div>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {getEffectPreview(choice).map((effect, i) => (
-                        <Badge
-                          key={i}
-                          variant="secondary"
-                          className="text-xs font-normal"
+          {event.choices.map((choice) => {
+            const isSelected = selectedChoice === choice.id;
+            return (
+              <Card
+                key={choice.id}
+                className={cn(
+                  'event-choice-card cursor-pointer border-2 border-transparent',
+                  isSelected
+                    ? 'event-choice-selected ring-2 ring-primary border-primary bg-primary/5 shadow-lg'
+                    : 'hover:border-primary/30 hover:bg-accent/50'
+                )}
+                onClick={() => setSelectedChoice(choice.id)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={cn(
+                        'w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 transition-all duration-200',
+                        isSelected
+                          ? 'border-primary bg-primary scale-110'
+                          : 'border-muted-foreground/30'
+                      )}
+                    >
+                      {isSelected && (
+                        <svg
+                          className="w-full h-full text-primary-foreground p-0.5 lesson-card-checkmark"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
                         >
-                          {effect}
-                        </Badge>
-                      ))}
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium">{choice.label}</div>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {getEffectPreview(choice).map((effect, i) => (
+                          <Badge
+                            key={i}
+                            variant="outline"
+                            className={cn(
+                              'text-xs font-medium',
+                              effect.isPositive && 'effect-badge-positive',
+                              effect.isNegative && 'effect-badge-negative',
+                              !effect.isPositive && !effect.isNegative && 'effect-badge-neutral'
+                            )}
+                          >
+                            {effect.text}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         <div className="flex gap-2 pt-4 border-t">
@@ -190,15 +202,15 @@ export function EventNotification({ event, onClick }: EventNotificationProps) {
       )}
     >
       <Card
-        className="cursor-pointer hover:shadow-lg transition-shadow border-l-4 border-l-amber-500 max-w-xs animate-pulse-subtle"
+        className="event-notification cursor-pointer hover:shadow-xl transition-shadow border-l-4 border-l-amber-500 max-w-xs bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20"
         onClick={onClick}
       >
         <CardContent className="p-3">
           <div className="flex items-start gap-2">
-            <span className="text-xl">❗</span>
+            <span className="text-xl event-icon">❗</span>
             <div>
-              <div className="font-medium text-sm">{event.title}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">
+              <div className="font-medium text-sm text-amber-900 dark:text-amber-100">{event.title}</div>
+              <div className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
                 Click to respond
               </div>
             </div>

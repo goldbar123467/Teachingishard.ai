@@ -49,3 +49,8 @@ export function useClassStats() {
     needsHelpCount: students.filter(s => s.needsExtraHelp).length,
   };
 }
+
+export function useSchoolYear() {
+  const { state } = useGame();
+  return state.schoolYear;
+}

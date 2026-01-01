@@ -66,17 +66,25 @@ async function notifyAgent(agent: Agent, messageFile: string): Promise<void> {
   const subjectMatch = content.match(/"subject":\s*"([^"]+)"/);
   const subject = subjectMatch ? subjectMatch[1] : "New message";
 
-  console.log(`📨 [${agent.name}] New message: ${subject}`);
+  // Extract importance
+  const importanceMatch = content.match(/"importance":\s*"([^"]+)"/);
+  const importance = importanceMatch ? importanceMatch[1] : "normal";
+  const isUrgent = importance === "urgent" || importance === "high";
 
-  // Send a short, clean instruction - let agent fetch details from inbox
-  const shortSubject = subject.slice(0, 60).replace(/"/g, "'");
-  const instruction = `New task: ${shortSubject}. Fetch your inbox and work on it.`;
+  console.log(`📨 [${agent.name}] ${isUrgent ? "🚨 URGENT: " : ""}${subject}`);
+
+  // Build a direct, actionable command that the agent MUST execute
+  const shortSubject = subject.slice(0, 50).replace(/'/g, "");
+  const urgentPrefix = isUrgent ? "URGENT ACTION REQUIRED: " : "";
+
+  // The instruction tells the agent exactly what to do
+  const instruction = `${urgentPrefix}You have a new message: "${shortSubject}". Use the mcp-agent-mail fetch_inbox tool NOW to read it, then immediately take action based on the message content. Do not wait - start working on this task right away.`;
 
   const cmd = `tmux send-keys -t ${agent.session} '${instruction}' Enter`;
 
   try {
     await execAsync(cmd);
-    console.log(`   ✓ Sent to ${agent.session}`);
+    console.log(`   ✓ Sent actionable command to ${agent.session}`);
   } catch (e) {
     console.error(`   ✗ Failed to notify ${agent.name}:`, e);
   }
