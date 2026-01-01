@@ -8,8 +8,10 @@ import {
 } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Smartphone } from 'lucide-react';
 import type { Student } from '@/lib/game/types';
 import { getStudentFullName, getStudentInitials } from '@/lib/students/generator';
 import { MoodIndicator } from './MoodIndicator';
@@ -21,6 +23,7 @@ interface StudentDetailModalProps {
   allStudents: Student[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onViewPhone?: (student: Student) => void;
 }
 
 function getDiceBearUrl(seed: string): string {
@@ -134,6 +137,7 @@ export function StudentDetailModal({
   allStudents,
   open,
   onOpenChange,
+  onViewPhone,
 }: StudentDetailModalProps) {
   if (!student) return null;
 
@@ -159,7 +163,23 @@ export function StudentDetailModal({
           </Avatar>
 
           <div className="flex-1">
-            <h2 className="text-xl font-bold">{getStudentFullName(student)}</h2>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-xl font-bold">{getStudentFullName(student)}</h2>
+              {onViewPhone && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onViewPhone(student);
+                    onOpenChange(false);
+                  }}
+                  className="gap-2 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-300 dark:hover:bg-violet-900/30 dark:hover:text-violet-300"
+                >
+                  <Smartphone className="h-4 w-4" />
+                  View Phone
+                </Button>
+              )}
+            </div>
 
             <div className="flex items-center gap-2 mt-1">
               <Badge className={cn('capitalize', TRAIT_COLORS[student.primaryTrait])}>

@@ -66,19 +66,13 @@ const createMockPost = (overrides: Partial<StudentPost> = {}): StudentPost => ({
   category: 'social',
   type: 'text',
   content: 'This is a test post about friendship and fun times!',
-  timestamp: Date.now(),
+  timestamp: 50,
+  timeOfDay: 'lunch',
   likes: 5,
   comments: [],
-  shares: 1,
   viralScore: 42,
-  engagement: {
-    likes: 5,
-    comments: 0,
-    shares: 1,
-    likedBy: ['student-2', 'student-3'],
-    commentedBy: [],
-    sharedBy: ['student-4'],
-  },
+  hashtags: [],
+  duringClass: false,
   ...overrides,
 });
 
@@ -152,30 +146,14 @@ describe('Viral Score Calculation', () => {
     const lowEngagementPost = createMockPost({
       likes: 2,
       comments: [],
-      engagement: {
-        likes: 2,
-        comments: 0,
-        shares: 0,
-        likedBy: ['student-2'],
-        commentedBy: [],
-        sharedBy: [],
-      }
     });
 
     const highEngagementPost = createMockPost({
       likes: 10,
       comments: [
-        { studentId: 'student-2', content: 'Great post', timestamp: Date.now() },
-        { studentId: 'student-3', content: 'Totally agree', timestamp: Date.now() },
+        { id: '1', authorId: 'student-2', handle: 'student2', content: 'Great post', timestamp: 50, likes: 0 },
+        { id: '2', authorId: 'student-3', handle: 'student3', content: 'Totally agree', timestamp: 50, likes: 0 },
       ],
-      engagement: {
-        likes: 10,
-        comments: 2,
-        shares: 2,
-        likedBy: Array.from({ length: 10 }, (_, i) => `student-${i}`),
-        commentedBy: ['student-2', 'student-3'],
-        sharedBy: ['student-4', 'student-5'],
-      }
     });
 
     const lowScore = calculateViralScore(lowEngagementPost, 50, 15);
@@ -185,7 +163,7 @@ describe('Viral Score Calculation', () => {
   });
 
   it('should factor in author popularity', () => {
-    const post = createMockPost({ likes: 5, comments: [{ studentId: 'student-2', content: 'Nice', timestamp: Date.now() }] });
+    const post = createMockPost({ likes: 5, comments: [{ id: '1', authorId: 'student-2', handle: 'student2', content: 'Nice', timestamp: 50, likes: 0 }] });
 
     const unpopularScore = calculateViralScore(post, 20, 15);
     const popularScore = calculateViralScore(post, 90, 15);
@@ -197,14 +175,6 @@ describe('Viral Score Calculation', () => {
     const zeroPost = createMockPost({
       likes: 0,
       comments: [],
-      engagement: {
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        likedBy: [],
-        commentedBy: [],
-        sharedBy: [],
-      }
     });
 
     const score = calculateViralScore(zeroPost, 50, 15);
@@ -370,8 +340,8 @@ describe('Content Validation', () => {
   it('should handle edge cases in post data', () => {
     const author = createTestStudent({ id: 'student-1' });
     const edgeCases = [
-      createMockPost({ likes: 0, comments: [], shares: 0 }),
-      createMockPost({ likes: 50, comments: [], shares: 10 }),
+      createMockPost({ likes: 0, comments: [] }),
+      createMockPost({ likes: 50, comments: [] }),
       createMockPost({ content: 'x' }),
     ];
 
@@ -402,7 +372,7 @@ describe('Social Media System Integration', () => {
     const students = [
       createTestStudent({ id: 'student-1', primaryTrait: 'outgoing' }),
       createTestStudent({ id: 'student-2', primaryTrait: 'shy' }),
-      createTestStudent({ id: 'student-3', primaryTrait: 'dramatic' }),
+      createTestStudent({ id: 'student-3', primaryTrait: 'social' }),
     ];
 
     const context = createTestContext();

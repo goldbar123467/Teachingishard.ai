@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { FeedPost, FeedPostData } from './FeedPost';
 import type { Student } from '@/lib/game/types';
 import { cn } from '@/lib/utils';
@@ -14,6 +15,7 @@ interface SocialFeedProps {
   posts: FeedPostData[];
   students: Student[];
   onLike?: (postId: string) => void;
+  onAuthorClick?: (student: Student) => void;
   maxHeight?: string;
   emptyStateEmoji?: string;
   emptyStateText?: string;
@@ -69,6 +71,7 @@ export function SocialFeed({
   posts,
   students,
   onLike,
+  onAuthorClick,
   maxHeight = '600px',
   emptyStateEmoji = '🤐',
   emptyStateText = 'No posts yet. Check back later!',
@@ -94,6 +97,28 @@ export function SocialFeed({
 
     return filtered.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }, [posts, activeFilter, selectedStudentId]);
+
+  // Calculate unread posts (last 5 minutes)
+  const unreadCount = useMemo(() => {
+    return posts.filter(p =>
+      new Date(p.timestamp) > new Date(Date.now() - 5 * 60 * 1000)
+    ).length;
+  }, [posts]);
+
+  // Calculate trending topics
+  const trendingTopics = useMemo(() => {
+    const topics = posts
+      .slice(-20)
+      .flatMap(p => p.tags || [])
+      .reduce((acc, tag) => {
+        acc[tag] = (acc[tag] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+    return Object.entries(topics)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+  }, [posts]);
 
   const handlePullRefresh = () => {
     if (onRefresh && !isRefreshing) {
@@ -132,6 +157,11 @@ export function SocialFeed({
           <h2 className="text-lg font-bold bg-gradient-to-r from-violet-600 to-purple-600 dark:from-violet-400 dark:to-purple-400 bg-clip-text text-transparent">
             Social Feed
           </h2>
+          {unreadCount > 0 && (
+            <Badge variant="destructive" className="rounded-full">
+              {unreadCount}
+            </Badge>
+          )}
           <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
             {posts.length} posts
           </span>
@@ -171,6 +201,25 @@ export function SocialFeed({
           );
         })}
       </motion.div>
+
+      {/* Trending Topics */}
+      {trendingTopics.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="px-4 py-2 border-b border-border/50 bg-violet-50/50 dark:bg-violet-900/10"
+        >
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-muted-foreground">🔥 Trending:</span>
+            {trendingTopics.map(([topic, count]) => (
+              <Badge key={topic} variant="secondary" className="text-xs">
+                #{topic} ({count})
+              </Badge>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Feed Content */}
       <ScrollArea
@@ -249,6 +298,7 @@ export function SocialFeed({
                       post={post}
                       students={students}
                       onLike={onLike}
+                      onAuthorClick={onAuthorClick}
                     />
                   </motion.div>
                 ))}

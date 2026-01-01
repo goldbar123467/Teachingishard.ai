@@ -28,6 +28,10 @@ function createMockStudent(overrides: Partial<Student> = {}): Student {
     energy: 80,
     socialSkills: 50,
     mood: 'neutral',
+    popularity: 50,
+    clique: null,
+    socialEnergy: 50,
+    friendshipStrengths: {},
     attendanceToday: true,
     homeworkCompleted: true,
     homeworkQuality: 75,
@@ -198,7 +202,7 @@ describe('Social Dynamics Engine', () => {
         }),
         createMockStudent({
           id: 's2',
-          primaryTrait: 'smart',
+          primaryTrait: 'analytical',
           socialSkills: 50,
         }),
       ];

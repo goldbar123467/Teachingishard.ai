@@ -19,12 +19,14 @@ export interface FeedPostData {
   participants: string[]; // student IDs involved
   sentiment: 'positive' | 'negative' | 'neutral' | 'dramatic';
   likes?: number;
+  tags?: string[]; // hashtags for trending topics
 }
 
 interface FeedPostProps {
   post: FeedPostData;
   students: Student[];
   onLike?: (postId: string) => void;
+  onAuthorClick?: (student: Student) => void;
 }
 
 const postTypeConfig = {
@@ -62,6 +64,14 @@ const sentimentBorderColors = {
   dramatic: 'border-l-orange-500 shadow-lg shadow-orange-500/20',
 };
 
+const typeBorderColors = {
+  drama: 'border-l-pink-500 shadow-lg shadow-pink-500/10',
+  achievement: 'border-l-blue-500 shadow-lg shadow-blue-500/10',
+  interaction: 'border-l-green-500 shadow-lg shadow-green-500/10',
+  mood_change: 'border-l-purple-500 shadow-lg shadow-purple-500/10',
+  teacher_action: 'border-l-blue-500 shadow-lg shadow-blue-500/10',
+};
+
 const dramaticGlowAnimation = {
   initial: { boxShadow: 'inset 0 0 20px rgba(249, 115, 22, 0)' },
   animate: {
@@ -92,6 +102,7 @@ export function FeedPost({
   post,
   students,
   onLike,
+  onAuthorClick,
 }: FeedPostProps) {
   const config = postTypeConfig[post.type];
   const authorStudent = students.find(s => s.id === post.author);
@@ -100,7 +111,8 @@ export function FeedPost({
     .filter((s): s is Student => s !== undefined);
 
   const isDrama = post.sentiment === 'dramatic';
-  const borderColor = sentimentBorderColors[post.sentiment];
+  // Use type-based border colors, fallback to sentiment if type doesn't have specific color
+  const borderColor = typeBorderColors[post.type] || sentimentBorderColors[post.sentiment];
 
   return (
     <motion.div
@@ -127,18 +139,32 @@ export function FeedPost({
             {/* Header: Avatar, Name, Type, Time */}
             <div className="flex items-start gap-3 mb-3">
               {authorStudent && (
-                <StudentAvatar
-                  student={authorStudent}
-                  size="md"
-                  showMood={true}
-                />
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="cursor-pointer"
+                  onClick={() => onAuthorClick?.(authorStudent)}
+                >
+                  <StudentAvatar
+                    student={authorStudent}
+                    size="md"
+                    showMood={true}
+                  />
+                </motion.div>
               )}
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-sm truncate">
+                  <motion.span
+                    whileHover={{ scale: 1.02 }}
+                    className={cn(
+                      "font-semibold text-sm truncate transition-colors",
+                      onAuthorClick && authorStudent && "cursor-pointer hover:text-primary"
+                    )}
+                    onClick={() => authorStudent && onAuthorClick?.(authorStudent)}
+                  >
                     {authorStudent?.firstName || 'System'}
-                  </span>
+                  </motion.span>
                   <Badge
                     variant="outline"
                     className={cn(

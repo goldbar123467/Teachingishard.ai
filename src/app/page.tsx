@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { MessageSquare } from 'lucide-react';
 import { StudentGrid } from '@/components/students/StudentGrid';
 import { useGame, useClassStats, useTurn, useTeacher, useSchoolYear } from '@/hooks/useGame';
+import { useSocialMedia } from '@/hooks/useSocialMedia';
 import { DAY_LABELS, PHASE_LABELS, PHASE_ORDER } from '@/lib/game/constants';
 import type { Student, GameState, GameEvent } from '@/lib/game/types';
 import { LessonSelector } from '@/components/teaching/LessonSelector';
@@ -22,7 +24,7 @@ import { MainLayout } from '@/components/layout';
 import { SchoolYearCalendar, SchoolYearProgress } from '@/components/dashboard/SchoolYearCalendar';
 import { SocialFeed } from '@/components/social/SocialFeed';
 import type { FeedPostData } from '@/components/social/FeedPost';
-import { generateSocialInteraction, generateFeedPost } from '@/lib/students/socialEngine';
+import { PhoneScreen } from '@/components/social/PhoneScreen';
 
 function PhaseIndicator() {
   const turn = useTurn();
@@ -118,9 +120,10 @@ function TeacherStats() {
 
 interface TurnControlsProps {
   onEndDay?: () => void;
+  onGeneratePosts?: () => void;
 }
 
-function TurnControls({ onEndDay }: TurnControlsProps) {
+function TurnControls({ onEndDay, onGeneratePosts }: TurnControlsProps) {
   const { advancePhase, advanceDay, canAdvancePhase } = useGame();
   const turn = useTurn();
 
@@ -133,7 +136,7 @@ function TurnControls({ onEndDay }: TurnControlsProps) {
   };
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-col gap-2">
       {turn.phase !== 'end-of-day' ? (
         <Button
           onClick={advancePhase}
@@ -144,6 +147,17 @@ function TurnControls({ onEndDay }: TurnControlsProps) {
       ) : (
         <Button onClick={handleEndDay}>
           End Day → View Summary
+        </Button>
+      )}
+      {onGeneratePosts && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onGeneratePosts}
+          className="gap-2"
+        >
+          <MessageSquare className="h-4 w-4" />
+          Generate Posts
         </Button>
       )}
     </div>
@@ -291,51 +305,9 @@ function PhaseContent() {
   }
 }
 
-function generateSampleFeedPosts(students: Student[], currentDay: string | number): FeedPostData[] {
-  const posts: FeedPostData[] = [];
-
-  // Generate 3-5 random social interactions as feed posts
-  const numPosts = Math.floor(Math.random() * 3) + 3;
-  const dayNum = typeof currentDay === 'string' ? 0 : currentDay;
-
-  for (let i = 0; i < numPosts; i++) {
-    const student1 = students[Math.floor(Math.random() * students.length)];
-    let student2 = students[Math.floor(Math.random() * students.length)];
-
-    // Ensure student2 is different
-    while (student2.id === student1.id) {
-      student2 = students[Math.floor(Math.random() * students.length)];
-    }
-
-    try {
-      const interaction = generateSocialInteraction(student1, student2, dayNum);
-      const post = generateFeedPost(interaction, students);
-
-      // Transform to FeedPostData format
-      const feedPost: FeedPostData = {
-        id: post.id || `post-${i}-${Date.now()}`,
-        type: (post.type as any) || 'interaction',
-        author: post.author || student1.id,
-        content: post.content,
-        emoji: post.emoji,
-        timestamp: new Date(Date.now() - Math.random() * 3600000),
-        participants: interaction.participants || [student1.id, student2.id],
-        sentiment: post.sentiment as any,
-        likes: (post.likes ?? 0) + Math.floor(Math.random() * 8),
-      };
-
-      posts.push(feedPost);
-    } catch (error) {
-      // Silently skip if generation fails
-      console.debug('Feed post generation skipped');
-    }
-  }
-
-  return posts.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-}
-
 export default function Home() {
   const { state, newGame, loadGame, interactWithStudent, resolveEvent, checkForRandomEvents, advanceDay } = useGame();
+  const { posts: socialPosts, processSocialMedia, likePost } = useSocialMedia();
   const classStats = useClassStats();
   const turn = useTurn();
   const teacher = useTeacher();
@@ -344,8 +316,9 @@ export default function Home() {
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [activeEvent, setActiveEvent] = useState<GameEvent | null>(null);
   const [showDayTransition, setShowDayTransition] = useState(false);
-  const [feedPosts, setFeedPosts] = useState<FeedPostData[]>([]);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [phoneStudent, setPhoneStudent] = useState<Student | null>(null);
   const previousPhaseRef = useRef(turn.phase);
   const previousStudentsRef = useRef(state.students);
   const previousTeacherEnergyRef = useRef(teacher.energy);
@@ -372,11 +345,10 @@ export default function Home() {
     }
   }, [turn.phase, checkForRandomEvents, state.students, teacher.energy]);
 
-  // Generate social feed posts when day changes or on mount
+  // Process social media when phase changes
   useEffect(() => {
-    const newPosts = generateSampleFeedPosts(state.students, turn.dayOfWeek);
-    setFeedPosts(newPosts);
-  }, [turn.dayOfWeek, state.students]);
+    processSocialMedia();
+  }, [turn.phase, processSocialMedia]);
 
   // Show event popup when new events appear
   useEffect(() => {
@@ -384,6 +356,49 @@ export default function Home() {
       setActiveEvent(turn.activeEvents[0]);
     }
   }, [turn.activeEvents, activeEvent]);
+
+  // Transform socialPosts to FeedPostData format
+  const feedPosts = useMemo<FeedPostData[]>(() => {
+    return socialPosts.map(post => {
+      const author = state.students.find(s => s.id === post.authorId);
+
+      // Map category to type
+      const typeMapping: Record<string, FeedPostData['type']> = {
+        celebration: 'achievement',
+        social: 'interaction',
+        complaint: 'drama',
+        panic: 'drama',
+        gossip: 'drama',
+        boredom: 'mood_change',
+        help: 'interaction',
+        random: 'interaction',
+      };
+
+      // Map sentiment
+      const sentimentMapping: Record<string, FeedPostData['sentiment']> = {
+        celebration: 'positive',
+        help: 'neutral',
+        boredom: 'neutral',
+        complaint: 'negative',
+        panic: 'dramatic',
+        gossip: 'dramatic',
+        social: 'positive',
+        random: 'neutral',
+      };
+
+      return {
+        id: post.id,
+        type: typeMapping[post.category] || 'interaction',
+        author: author?.id || post.authorId,
+        content: post.content,
+        emoji: '📱',
+        timestamp: new Date(Date.now() - (100 - post.timestamp) * 60000), // Convert game time to Date
+        participants: [post.authorId],
+        sentiment: sentimentMapping[post.category] || 'neutral',
+        likes: post.likes,
+      };
+    });
+  }, [socialPosts, state.students]);
 
   const handleLoadGame = (loadedState: GameState) => {
     loadGame(loadedState);
@@ -414,7 +429,8 @@ export default function Home() {
     setShowDayTransition(false);
   };
 
-  const handleLikePost = (postId: string) => {
+  const handleLikePost = useCallback((postId: string) => {
+    // Update local UI state
     setLikedPosts(prev => {
       const newLiked = new Set(prev);
       if (newLiked.has(postId)) {
@@ -425,15 +441,14 @@ export default function Home() {
       return newLiked;
     });
 
-    // Update the post's like count
-    setFeedPosts(prev =>
-      prev.map(post =>
-        post.id === postId
-          ? { ...post, likes: (post.likes ?? 0) + (likedPosts.has(postId) ? -1 : 1) }
-          : post
-      )
-    );
-  };
+    // Update game state
+    likePost(postId, 'teacher');
+  }, [likePost]);
+
+  const handleOpenPhone = useCallback((student: Student) => {
+    setPhoneStudent(student);
+    setShowPhoneModal(true);
+  }, []);
 
   // Calculate day summary for transition
   const daySummary = calculateDaySummary(
@@ -473,7 +488,7 @@ export default function Home() {
               <CardTitle className="text-sm">Actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <TurnControls onEndDay={handleShowDayTransition} />
+              <TurnControls onEndDay={handleShowDayTransition} onGeneratePosts={processSocialMedia} />
             </CardContent>
           </Card>
         </div>
@@ -664,6 +679,7 @@ export default function Home() {
           allStudents={state.students}
           open={showStudentModal}
           onOpenChange={setShowStudentModal}
+          onViewPhone={handleOpenPhone}
         />
 
         {/* Event Popup */}
@@ -714,6 +730,21 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Phone Screen Modal */}
+      {showPhoneModal && phoneStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="relative">
+            <PhoneScreen
+              student={phoneStudent}
+              posts={feedPosts.filter(p => p.author === phoneStudent.id || p.participants?.includes(phoneStudent.id))}
+              students={state.students}
+              onClose={() => setShowPhoneModal(false)}
+              onLike={(postId) => likePost(postId, phoneStudent.id)}
+            />
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }
