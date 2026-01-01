@@ -3,19 +3,24 @@
  * Coordinates all event types: standard, parent, special, behavior, consequences
  */
 
-import type { Student } from './types';
+import type { Student, GameEvent } from './types';
 import { checkForAllEvents } from '@/data/events';
 import { generatePersonalityBehaviors, applyBehaviorEffects } from '../students/advancedBehavior';
 import { shouldIssueConsequence, issueConsequence, shouldIssueReward, issueReward, applyConsequence, applyReward } from './consequences';
 import type { BehaviorEvent } from '../students/advancedBehavior';
 import type { Consequence, Reward } from './consequences';
+import type { ParentEvent, PTAMeetingEvent } from '@/data/parentEvents';
+import type { SpecialEvent } from '@/data/specialEvents';
+
+// Union type for all event types
+export type AnyEvent = GameEvent | ParentEvent | PTAMeetingEvent | SpecialEvent | BehaviorEvent;
 
 export interface EventSystemState {
   activeConsequences: Consequence[];
   activeRewards: Reward[];
   behaviorHistory: BehaviorEvent[];
-  parentEventLog: any[];
-  specialEventLog: any[];
+  parentEventLog: (ParentEvent | PTAMeetingEvent)[];
+  specialEventLog: SpecialEvent[];
 }
 
 /**
@@ -30,13 +35,13 @@ export function processPhaseEvents(
   seasonalContext?: string
 ): {
   updatedStudents: Student[];
-  events: any[];
+  events: AnyEvent[];
   consequences: Consequence[];
   rewards: Reward[];
   notifications: string[];
 } {
   const updatedStudents = [...students];
-  const allEvents: any[] = [];
+  const allEvents: AnyEvent[] = [];
   const newConsequences: Consequence[] = [];
   const newRewards: Reward[] = [];
   const notifications: string[] = [];
@@ -187,6 +192,6 @@ export function getEventSummary(eventState: EventSystemState, currentDay: number
     recentConsequences: eventState.activeConsequences.filter(c => c.date > dayThreshold).length,
     recentRewards: eventState.activeRewards.filter(r => r.date > dayThreshold).length,
     recentBehaviorEvents: eventState.behaviorHistory.filter(b => b.timestamp > dayThreshold).length,
-    recentParentEvents: eventState.parentEventLog.filter(p => p.timestamp > dayThreshold).length
+    recentParentEvents: eventState.parentEventLog.filter(p => 'timestamp' in p && p.timestamp > dayThreshold).length
   };
 }
