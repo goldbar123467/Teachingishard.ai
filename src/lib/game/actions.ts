@@ -49,3 +49,7 @@ export function tickStudentState(): GameAction {
 export function checkForRandomEvent(): GameAction {
   return { type: 'RANDOM_EVENT_CHECK' };
 }
+
+export function moveTimeBlock(blockId: string, newDayOfWeek: number, newStartTime: string): GameAction {
+  return { type: 'MOVE_TIME_BLOCK', payload: { blockId, newDayOfWeek, newStartTime } };
+}

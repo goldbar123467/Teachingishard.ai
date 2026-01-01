@@ -41,6 +41,12 @@ export interface Student {
   friendIds: string[];
   rivalIds: string[];
 
+  // Social dynamics (new)
+  popularity: number; // 0-100
+  clique: 'popular' | 'nerds' | 'artists' | 'athletes' | 'loners' | 'creatives' | null;
+  socialEnergy: number; // 0-100, introverts drain, extroverts gain
+  friendshipStrengths: Record<string, number>; // studentId -> strength (-100 to 100)
+
   // History tracking
   testScores: number[];
   behaviorIncidents: number;
@@ -130,6 +136,48 @@ export interface EventEffect {
   modifier: number;
 }
 
+// ============ SCHOOL YEAR ============
+// Re-export calendar types for convenience
+export type { SchoolYear, SchoolDay, SchoolBreak, WeatherEvent } from './calendar';
+
+// Re-export schedule types for convenience
+export type {
+  DailySchedule,
+  TimeBlock,
+  SubjectType,
+  SpecialType,
+  BlockStatus,
+} from './schedule';
+
+// Re-export lesson pivot types for convenience
+export type {
+  LessonStatus,
+  PivotOption,
+  FailureRisk,
+  PivotType,
+  PivotResult,
+} from './lessonPivot';
+
+// Re-export time tracking types for convenience
+export type {
+  TimeTracker,
+  PacingStatus,
+  TimeAlert,
+  EarlyFinishOption,
+  OvertimeOption,
+} from './timeTracking';
+
+// Re-export lesson plan types for convenience
+export type {
+  LessonPlan,
+  LessonActivity,
+  LearningObjective,
+  LessonMaterial,
+  LessonPhase,
+  GroupingType,
+  TeachingMethodType,
+} from './lessonPlan';
+
 // ============ GAME STATE ============
 export interface GameState {
   saveId: string;
@@ -139,6 +187,15 @@ export interface GameState {
   students: Student[];
   teacher: Teacher;
   turn: TurnState;
+  schoolYear: import('./calendar').SchoolYear;
+
+  // Schedule system
+  currentSchedule: import('./schedule').DailySchedule | null;
+  currentTimeBlock: import('./schedule').TimeBlock | null;
+  timeTracker: import('./timeTracking').TimeTracker | null;
+
+  // Lesson tracking
+  currentLessonStatus: import('./lessonPivot').LessonStatus | null;
 
   classAverage: number;
 
@@ -159,4 +216,17 @@ export type GameAction =
   | { type: 'LOAD_GAME'; payload: GameState }
   | { type: 'NEW_GAME'; payload: { difficulty: GameState['difficulty'] } }
   | { type: 'TICK_STUDENT_STATE' }
-  | { type: 'RANDOM_EVENT_CHECK' };
+  | { type: 'RANDOM_EVENT_CHECK' }
+  | { type: 'PROCESS_SOCIAL' }
+  // Schedule actions
+  | { type: 'SET_SCHEDULE'; payload: import('./schedule').DailySchedule }
+  | { type: 'START_TIME_BLOCK'; payload: { blockId: string } }
+  | { type: 'END_TIME_BLOCK'; payload: { blockId: string } }
+  | { type: 'UPDATE_TIME_TRACKER'; payload: { elapsedMinutes: number } }
+  // Lesson pivot actions
+  | { type: 'PIVOT_LESSON'; payload: { pivotOptionId: string } }
+  | { type: 'UPDATE_LESSON_STATUS'; payload: import('./lessonPivot').LessonStatus }
+  // Time management actions
+  | { type: 'HANDLE_EARLY_FINISH'; payload: { optionId: string } }
+  | { type: 'HANDLE_OVERTIME'; payload: { optionId: string } }
+  | { type: 'MOVE_TIME_BLOCK'; payload: { blockId: string; newDayOfWeek: number; newStartTime: string } };

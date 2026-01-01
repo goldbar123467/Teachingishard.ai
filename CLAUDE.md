@@ -72,6 +72,31 @@ A **turn-based dashboard-driven game** where you play as a 5th-grade teacher man
 | FuchsiaGlen | Styler | Tailwind styling, responsive design, animations |
 | SilentCompass | Tester | Build verification, testing, error catching |
 
+## Token Efficiency Guidelines
+
+**Model Selection by Role:**
+| Agent | Recommended Model | Rationale |
+|-------|------------------|-----------|
+| CobaltDeer | `sonnet` | Planning needs good reasoning, not max intelligence |
+| DarkRidge | `sonnet` | Building code is well-suited to sonnet |
+| FuchsiaGlen | `haiku` | CSS/Tailwind styling is straightforward |
+| SilentCompass | `haiku` | Running builds/tests doesn't need opus |
+
+**Token-Saving Practices:**
+1. **Use Explore subagent** - For codebase questions, use `Task` with `subagent_type=Explore` instead of multiple Glob/Grep/Read calls
+2. **Concise agent-mail** - Keep messages under 500 words; use bullet points, not essays
+3. **Read specific lines** - Use `limit` and `offset` params when reading large files
+4. **Don't re-read files** - If you just read a file, reference your memory of it
+5. **Batch searches** - Make parallel tool calls instead of sequential ones
+6. **Skip node_modules** - Never explore or read from node_modules/
+7. **Trust task assignments** - Don't re-explore what other agents reported
+
+**Anti-Patterns to Avoid:**
+- Reading entire files when you only need types/signatures
+- Sending long code blocks in agent-mail (reference file paths instead)
+- Using opus for simple styling or test running tasks
+- Exploring the full codebase when your task is specific
+
 ## Project Structure (Planned)
 
 ```
