@@ -11,6 +11,9 @@ import {
 import { checkForEvents } from '@/data/events';
 import { generateSchoolYear, type SchoolYear } from './calendar';
 import { processSocialTurn, calculateFriendshipCompatibility } from '../students/socialEngine';
+import { initializeStudentPhone, calculatePostingProbability, generatePostEngagement } from '../students/socialMedia';
+import { generatePost } from '../students/postGenerator';
+import { getTrendingPosts } from '../students/viralMechanics';
 import { generateDefaultSchedule } from './schedule';
 import {
   createTimeTracker,
@@ -73,6 +76,12 @@ export function createInitialState(difficulty: GameState['difficulty'] = 'normal
   // Generate school year with current year and random seed
   const schoolYear = generateSchoolYear(new Date().getFullYear());
 
+  // Initialize student phones
+  const studentPhones: Record<string, import('../students/socialMedia').StudentPhone> = {};
+  for (const student of students) {
+    studentPhones[student.id] = initializeStudentPhone(student);
+  }
+
   return {
     saveId: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
@@ -104,6 +113,11 @@ export function createInitialState(difficulty: GameState['difficulty'] = 'normal
     currentPacingMode: 'normal',
     activePacingState: null,
     activeTimePressure: null,
+    // Social media state
+    studentPhones,
+    socialPosts: [],
+    trendingPosts: [],
+    lastPostTimes: {},
     classAverage: calculateClassAverage(students),
     difficulty,
     autoSaveEnabled: true,
@@ -117,7 +131,30 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'LOAD_GAME': {
-      return action.payload;
+      const loadedState = action.payload;
+
+      // Ensure social media state exists (for backwards compatibility)
+      if (!loadedState.studentPhones) {
+        const studentPhones: Record<string, import('../students/socialMedia').StudentPhone> = {};
+        for (const student of loadedState.students) {
+          studentPhones[student.id] = initializeStudentPhone(student);
+        }
+        loadedState.studentPhones = studentPhones;
+      }
+
+      if (!loadedState.socialPosts) {
+        loadedState.socialPosts = [];
+      }
+
+      if (!loadedState.trendingPosts) {
+        loadedState.trendingPosts = [];
+      }
+
+      if (!loadedState.lastPostTimes) {
+        loadedState.lastPostTimes = {};
+      }
+
+      return loadedState;
     }
 
     case 'ADVANCE_PHASE': {
@@ -994,6 +1031,171 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         activeTimePressure: null,
+      };
+    }
+
+    // ============ SOCIAL MEDIA ACTIONS ============
+    case 'PROCESS_SOCIAL_MEDIA': {
+      const newPosts: import('../students/socialMedia').StudentPost[] = [];
+      const updatedLastPostTimes = { ...state.lastPostTimes };
+
+      // Only process students who are present
+      const presentStudents = state.students.filter(s => s.attendanceToday);
+
+      for (const student of presentStudents) {
+        // Check cooldown
+        const lastPost = updatedLastPostTimes[student.id] || 0;
+        const cooldownMs = 15 * 60 * 1000; // 15 min minimum
+        if (Date.now() - lastPost < cooldownMs) continue;
+
+        // Calculate probability based on mood, engagement, phase
+        const classEngagement = presentStudents.reduce((sum, s) => sum + s.engagement, 0) / Math.max(1, presentStudents.length);
+        const probability = calculatePostingProbability(student, {
+          currentPhase: state.turn.phase,
+          lessonEngagement: classEngagement,
+          isTestWeek: false,
+          hasHomework: state.turn.homeworkAssigned !== 'none' && state.turn.homeworkAssigned !== null,
+        });
+
+        if (Math.random() < probability) {
+          const generatedPost = generatePost({
+            student,
+            energy: student.energy,
+          });
+
+          if (generatedPost) {
+            // Convert GeneratedPost to StudentPost
+            const timeOfDay = (() => {
+              switch (state.turn.phase) {
+                case 'morning': return 'morning' as const;
+                case 'teaching': return 'lunch' as const;
+                case 'interaction': return 'afternoon' as const;
+                case 'end-of-day': return 'afterschool' as const;
+              }
+            })();
+
+            const studentPost: import('../students/socialMedia').StudentPost = {
+              id: crypto.randomUUID(),
+              authorId: student.id,
+              handle: state.studentPhones[student.id]?.handle || `student_${student.id.slice(0, 6)}`,
+              content: generatedPost.content,
+              category: generatedPost.template.category as import('../students/socialMedia').PostCategory,
+              type: 'text',
+              timestamp: state.schoolYear.currentDay,
+              timeOfDay,
+              likes: 0,
+              comments: [],
+              viralScore: 0,
+              hashtags: [],
+              duringClass: state.turn.phase === 'teaching',
+            };
+
+            // Generate engagement from other students
+            const { likes, comments } = generatePostEngagement(
+              studentPost,
+              student,
+              presentStudents,
+              state.schoolYear.currentDay
+            );
+
+            const postWithEngagement = {
+              ...studentPost,
+              likes,
+              comments,
+            };
+            newPosts.push(postWithEngagement);
+            updatedLastPostTimes[student.id] = Date.now();
+          }
+        }
+      }
+
+      const allPosts = [...state.socialPosts, ...newPosts];
+
+      return {
+        ...state,
+        socialPosts: allPosts,
+        lastPostTimes: updatedLastPostTimes,
+        trendingPosts: getTrendingPosts(allPosts, state.students, 10),
+      };
+    }
+
+    case 'ADD_POST': {
+      const newPosts = [...state.socialPosts, action.payload];
+      return {
+        ...state,
+        socialPosts: newPosts,
+        trendingPosts: getTrendingPosts(newPosts, state.students, 10),
+      };
+    }
+
+    case 'LIKE_POST': {
+      const { postId, likerId } = action.payload;
+      const updatedPosts = state.socialPosts.map(post => {
+        if (post.id === postId) {
+          // Check if already liked (would need to track who liked in comments or separate structure)
+          // For now, just increment likes count
+          return {
+            ...post,
+            likes: post.likes + 1,
+          };
+        }
+        return post;
+      });
+      return {
+        ...state,
+        socialPosts: updatedPosts,
+        trendingPosts: getTrendingPosts(updatedPosts, state.students, 10),
+      };
+    }
+
+    case 'CHECK_PHONE': {
+      const { studentId } = action.payload;
+      // Reduce engagement when student checks phone
+      const updatedStudents = state.students.map(s => {
+        if (s.id === studentId) {
+          return {
+            ...s,
+            engagement: Math.max(0, s.engagement - 10),
+          };
+        }
+        return s;
+      });
+      return {
+        ...state,
+        students: updatedStudents,
+      };
+    }
+
+    case 'CONFISCATE_PHONE': {
+      const { studentId } = action.payload;
+      const updatedStudents = state.students.map(s => {
+        if (s.id === studentId) {
+          return {
+            ...s,
+            mood: 'upset' as const,
+            engagement: Math.max(0, s.engagement - 25),
+          };
+        }
+        return s;
+      });
+      const updatedPhones = {
+        ...state.studentPhones,
+        [studentId]: {
+          ...state.studentPhones[studentId],
+          isConfiscated: true,
+        },
+      };
+      return {
+        ...state,
+        students: updatedStudents,
+        studentPhones: updatedPhones,
+      };
+    }
+
+    case 'UPDATE_TRENDING': {
+      return {
+        ...state,
+        trendingPosts: getTrendingPosts(state.socialPosts, state.students, 10),
       };
     }
 

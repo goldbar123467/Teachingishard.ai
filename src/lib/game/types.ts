@@ -13,6 +13,9 @@ export type PersonalityTrait =
   | 'analytical'
   | 'social';
 
+// ============ SOCIAL MEDIA IMPORTS ============
+import type { StudentPhone, StudentPost } from '../students/socialMedia';
+
 // ============ STUDENT MODEL ============
 export interface Student {
   id: string;
@@ -229,6 +232,12 @@ export interface GameState {
   activePacingState: import('./timeManagement').TimePacingState | null;
   activeTimePressure: import('./timeManagement').TimePressureEvent | null;
 
+  // Social Media State
+  studentPhones: Record<string, StudentPhone>;
+  socialPosts: StudentPost[];
+  trendingPosts: StudentPost[];
+  lastPostTimes: Record<string, number>;
+
   classAverage: number;
 
   difficulty: 'easy' | 'normal' | 'hard';
@@ -281,4 +290,11 @@ export type GameAction =
   | { type: 'APPLY_RUSHING'; payload: { targetProgress: number } }
   | { type: 'APPLY_DEEP_DIVE'; payload: { topic: string } }
   | { type: 'TRIGGER_TIME_PRESSURE'; payload: import('./timeManagement').TimePressureEvent }
-  | { type: 'RESOLVE_TIME_PRESSURE'; payload: { eventId: string } };
+  | { type: 'RESOLVE_TIME_PRESSURE'; payload: { eventId: string } }
+  // Social media actions
+  | { type: 'PROCESS_SOCIAL_MEDIA' }
+  | { type: 'ADD_POST'; payload: StudentPost }
+  | { type: 'LIKE_POST'; payload: { postId: string; likerId: string } }
+  | { type: 'CHECK_PHONE'; payload: { studentId: string } }
+  | { type: 'CONFISCATE_PHONE'; payload: { studentId: string } }
+  | { type: 'UPDATE_TRENDING' };

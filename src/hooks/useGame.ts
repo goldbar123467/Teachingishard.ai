@@ -65,3 +65,6 @@ export function useLessonPlans() {
     duplicateLessonPlan,
   };
 }
+
+// Re-export social media hooks
+export { useSocialMedia, useStudentPhone, useStudentPosts, useTrendingPosts } from './useSocialMedia';

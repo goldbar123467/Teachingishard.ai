@@ -70,3 +70,28 @@ export function deleteLessonPlan(planId: string): GameAction {
 export function duplicateLessonPlan(planId: string): GameAction {
   return { type: 'DUPLICATE_LESSON_PLAN', payload: { planId } };
 }
+
+// Social Media actions
+export function processSocialMedia(): GameAction {
+  return { type: 'PROCESS_SOCIAL_MEDIA' };
+}
+
+export function addPost(post: import('../students/socialMedia').StudentPost): GameAction {
+  return { type: 'ADD_POST', payload: post };
+}
+
+export function likePost(postId: string, likerId: string): GameAction {
+  return { type: 'LIKE_POST', payload: { postId, likerId } };
+}
+
+export function checkPhone(studentId: string): GameAction {
+  return { type: 'CHECK_PHONE', payload: { studentId } };
+}
+
+export function confiscatePhone(studentId: string): GameAction {
+  return { type: 'CONFISCATE_PHONE', payload: { studentId } };
+}
+
+export function updateTrending(): GameAction {
+  return { type: 'UPDATE_TRENDING' };
+}

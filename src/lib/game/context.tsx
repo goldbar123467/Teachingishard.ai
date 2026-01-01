@@ -3,6 +3,7 @@
 import { createContext, useReducer, useCallback, type ReactNode, type Dispatch } from 'react';
 import type { GameState, GameAction, Lesson, TeachingMethod, Activity, HomeworkType } from './types';
 import type { LessonPlan } from './lessonPlan';
+import type { StudentPhone, StudentPost } from '@/lib/students/socialMedia';
 import { gameReducer, createInitialState } from './reducer';
 import * as actions from './actions';
 
@@ -28,6 +29,14 @@ interface GameContextValue {
   updateLessonPlan: (lessonPlan: LessonPlan) => void;
   deleteLessonPlan: (planId: string) => void;
   duplicateLessonPlan: (planId: string) => void;
+
+  // Social Media methods
+  processSocialMedia: () => void;
+  getStudentPhone: (studentId: string) => StudentPhone | undefined;
+  getTrendingPosts: () => StudentPost[];
+  likePost: (postId: string, likerId: string) => void;
+  checkPhone: (studentId: string) => void;
+  confiscatePhone: (studentId: string) => void;
 
   // Computed helpers
   canAdvancePhase: boolean;
@@ -105,6 +114,31 @@ export function GameProvider({ children }: GameProviderProps) {
     dispatch(actions.duplicateLessonPlan(planId));
   }, []);
 
+  // Social Media methods
+  const processSocialMedia = useCallback(() => {
+    dispatch(actions.processSocialMedia());
+  }, []);
+
+  const getStudentPhone = useCallback((studentId: string) => {
+    return state.studentPhones[studentId];
+  }, [state.studentPhones]);
+
+  const getTrendingPostsCallback = useCallback(() => {
+    return state.trendingPosts;
+  }, [state.trendingPosts]);
+
+  const likePost = useCallback((postId: string, likerId: string) => {
+    dispatch(actions.likePost(postId, likerId));
+  }, []);
+
+  const checkPhone = useCallback((studentId: string) => {
+    dispatch(actions.checkPhone(studentId));
+  }, []);
+
+  const confiscatePhone = useCallback((studentId: string) => {
+    dispatch(actions.confiscatePhone(studentId));
+  }, []);
+
   // Computed state
   const canAdvancePhase = (() => {
     switch (state.turn.phase) {
@@ -142,6 +176,12 @@ export function GameProvider({ children }: GameProviderProps) {
     updateLessonPlan,
     deleteLessonPlan,
     duplicateLessonPlan: duplicateLessonPlanAction,
+    processSocialMedia,
+    getStudentPhone,
+    getTrendingPosts: getTrendingPostsCallback,
+    likePost,
+    checkPhone,
+    confiscatePhone,
     canAdvancePhase,
     canAdvanceDay,
   };
