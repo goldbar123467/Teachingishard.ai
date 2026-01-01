@@ -17,6 +17,9 @@ interface SocialFeedProps {
   maxHeight?: string;
   emptyStateEmoji?: string;
   emptyStateText?: string;
+  phoneStyle?: boolean;
+  selectedStudentId?: string;
+  onRefresh?: () => void;
 }
 
 const filterConfig: Record<FilterTab, {
@@ -69,16 +72,51 @@ export function SocialFeed({
   maxHeight = '600px',
   emptyStateEmoji = '🤐',
   emptyStateText = 'No posts yet. Check back later!',
+  phoneStyle = false,
+  selectedStudentId,
+  onRefresh,
 }: SocialFeedProps) {
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
 
   // Filter and sort posts
   const filteredPosts = useMemo(() => {
     const config = filterConfig[activeFilter];
-    return posts
-      .filter(config.filter)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  }, [posts, activeFilter]);
+    let filtered = posts.filter(config.filter);
+
+    // Filter by selected student if provided
+    if (selectedStudentId) {
+      filtered = filtered.filter(
+        post => post.author === selectedStudentId || post.participants?.includes(selectedStudentId)
+      );
+    }
+
+    return filtered.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }, [posts, activeFilter, selectedStudentId]);
+
+  const handlePullRefresh = () => {
+    if (onRefresh && !isRefreshing) {
+      setIsRefreshing(true);
+      onRefresh();
+      setTimeout(() => setIsRefreshing(false), 1000);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!phoneStyle) return;
+    const touch = e.touches[0];
+    setPullDistance(touch.clientY);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!phoneStyle) return;
+    const touch = e.touches[0];
+    const distance = touch.clientY - pullDistance;
+    if (distance > 80 && !isRefreshing) {
+      handlePullRefresh();
+    }
+  };
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-background via-background to-muted/20 rounded-xl border border-border/50">
@@ -135,8 +173,33 @@ export function SocialFeed({
       </motion.div>
 
       {/* Feed Content */}
-      <ScrollArea style={{ height: maxHeight }} className="flex-1">
-        <div className="p-4 space-y-3">
+      <ScrollArea
+        style={{ height: maxHeight }}
+        className="flex-1"
+      >
+        <div
+          className="p-4 space-y-3"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+        >
+          {/* Pull to refresh indicator */}
+          {phoneStyle && isRefreshing && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="text-center py-2 mb-2"
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                className="inline-block text-violet-500 text-xl"
+              >
+                ⟳
+              </motion.div>
+              <p className="text-xs text-muted-foreground mt-1">Refreshing...</p>
+            </motion.div>
+          )}
           {filteredPosts.length === 0 ? (
             // Empty State
             <motion.div
