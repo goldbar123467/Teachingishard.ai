@@ -13,6 +13,16 @@ import {
   applyInteractionEffect,
   getStudentsNeedingAttention,
   getClassMorale,
+  calculateBaseAttentionSpan,
+  calculateAttentionDecay,
+  getAttentionStatus,
+  generateIdleBehavior,
+  calculateMoodVolatility,
+  applyMoodTrigger,
+  applyMoodDrift,
+  calculateParticipationChance,
+  calculateParticipationQuality,
+  getParticipationBehavior,
 } from './behavior';
 import type { Student, Lesson, TeachingMethod, Mood } from '../game/types';
 
@@ -460,5 +470,255 @@ describe('getClassMorale', () => {
     expect(morale.distribution.happy).toBe(2);
     expect(morale.distribution.bored).toBe(1);
     expect(morale.distribution.neutral).toBe(0);
+  });
+});
+
+// ============ ATTENTION SPAN TESTS ============
+
+describe('calculateBaseAttentionSpan', () => {
+  it('returns higher attention span for analytical students', () => {
+    const analyticalStudent = createMockStudent({ primaryTrait: 'analytical' });
+    const distractedStudent = createMockStudent({ primaryTrait: 'distracted' });
+
+    const analyticalSpan = calculateBaseAttentionSpan(analyticalStudent);
+    const distractedSpan = calculateBaseAttentionSpan(distractedStudent);
+
+    expect(analyticalSpan).toBeGreaterThan(distractedSpan);
+  });
+
+  it('higher academic level increases attention span', () => {
+    const highAcademic = createMockStudent({ academicLevel: 90 });
+    const lowAcademic = createMockStudent({ academicLevel: 30 });
+
+    expect(calculateBaseAttentionSpan(highAcademic)).toBeGreaterThan(
+      calculateBaseAttentionSpan(lowAcademic)
+    );
+  });
+});
+
+describe('calculateAttentionDecay', () => {
+  it('attention decreases over time', () => {
+    const student = createMockStudent();
+    const initialAttention = 100;
+
+    const afterDecay = calculateAttentionDecay(student, 20, initialAttention);
+
+    expect(afterDecay).toBeLessThan(initialAttention);
+  });
+
+  it('tired students lose attention faster', () => {
+    const tiredStudent = createMockStudent({ energy: 20 });
+    const energizedStudent = createMockStudent({ energy: 90 });
+
+    const tiredDecay = calculateAttentionDecay(tiredStudent, 15, 100);
+    const energizedDecay = calculateAttentionDecay(energizedStudent, 15, 100);
+
+    expect(tiredDecay).toBeLessThan(energizedDecay);
+  });
+
+  it('engaged students maintain attention better', () => {
+    const engaged = createMockStudent({ engagement: 85 });
+    const disengaged = createMockStudent({ engagement: 20 });
+
+    const engagedDecay = calculateAttentionDecay(engaged, 15, 100);
+    const disengagedDecay = calculateAttentionDecay(disengaged, 15, 100);
+
+    expect(engagedDecay).toBeGreaterThan(disengagedDecay);
+  });
+});
+
+describe('getAttentionStatus', () => {
+  it('returns focused status for high attention', () => {
+    const status = getAttentionStatus(80);
+    expect(status.status).toBe('focused');
+  });
+
+  it('returns zoned-out status for very low attention', () => {
+    const status = getAttentionStatus(10);
+    expect(status.status).toBe('zoned-out');
+  });
+});
+
+// ============ IDLE BEHAVIOR TESTS ============
+
+describe('generateIdleBehavior', () => {
+  it('generates personality-appropriate behavior for creative students', () => {
+    const creativeStudent = createMockStudent({ primaryTrait: 'creative' });
+    const behavior = generateIdleBehavior(creativeStudent, 50);
+
+    expect(behavior.action).toBeTruthy();
+    expect(['harmless', 'minor', 'disruptive']).toContain(behavior.severity);
+  });
+
+  it('generates more disruptive behavior at low attention', () => {
+    const student = createMockStudent({ primaryTrait: 'social' });
+    const lowAttentionBehavior = generateIdleBehavior(student, 15);
+
+    expect(lowAttentionBehavior.needsRedirection || lowAttentionBehavior.severity === 'disruptive').toBeTruthy();
+  });
+
+  it('generates harmless behavior at high attention', () => {
+    const student = createMockStudent({ primaryTrait: 'perfectionist' });
+    const highAttentionBehavior = generateIdleBehavior(student, 85);
+
+    // High attention behaviors tend to be harmless
+    expect(highAttentionBehavior.severity).toBe('harmless');
+  });
+});
+
+// ============ MOOD VOLATILITY TESTS ============
+
+describe('calculateMoodVolatility', () => {
+  it('outgoing students have higher volatility', () => {
+    const outgoing = createMockStudent({ primaryTrait: 'outgoing' });
+    const analytical = createMockStudent({ primaryTrait: 'analytical' });
+
+    expect(calculateMoodVolatility(outgoing)).toBeGreaterThan(
+      calculateMoodVolatility(analytical)
+    );
+  });
+
+  it('tired students have higher volatility', () => {
+    const tired = createMockStudent({ energy: 20 });
+    const rested = createMockStudent({ energy: 90 });
+
+    expect(calculateMoodVolatility(tired)).toBeGreaterThan(
+      calculateMoodVolatility(rested)
+    );
+  });
+});
+
+describe('applyMoodTrigger', () => {
+  it('success trigger improves mood', () => {
+    const student = createMockStudent({ mood: 'neutral' });
+    const newMood = applyMoodTrigger(student, { type: 'success', intensity: 'moderate' });
+
+    expect(['happy', 'excited']).toContain(newMood);
+  });
+
+  it('failure trigger worsens mood for perfectionists', () => {
+    const perfectionist = createMockStudent({ mood: 'neutral', primaryTrait: 'perfectionist' });
+    const newMood = applyMoodTrigger(perfectionist, { type: 'failure', intensity: 'moderate' });
+
+    expect(['bored', 'frustrated', 'upset']).toContain(newMood);
+  });
+
+  it('shy students stressed by strong public praise', () => {
+    const shyStudent = createMockStudent({ mood: 'neutral', primaryTrait: 'shy' });
+    const newMood = applyMoodTrigger(shyStudent, { type: 'praise', intensity: 'strong' });
+
+    // Should remain neutral due to embarrassment
+    expect(newMood).toBe('neutral');
+  });
+});
+
+describe('applyMoodDrift', () => {
+  it('drifts mood toward neutral over time', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.1); // Low value ensures drift happens
+
+    const excitedStudent = createMockStudent({ mood: 'excited' });
+    const newMood = applyMoodDrift(excitedStudent, 2);
+
+    expect(newMood).not.toBe('excited');
+  });
+
+  it('neutral mood stays neutral', () => {
+    const neutralStudent = createMockStudent({ mood: 'neutral' });
+    const newMood = applyMoodDrift(neutralStudent, 1);
+
+    expect(newMood).toBe('neutral');
+  });
+});
+
+// ============ PARTICIPATION TESTS ============
+
+describe('calculateParticipationChance', () => {
+  it('outgoing students have higher participation chance', () => {
+    const outgoing = createMockStudent({ primaryTrait: 'outgoing' });
+    const shy = createMockStudent({ primaryTrait: 'shy' });
+
+    const outgoingChance = calculateParticipationChance(outgoing, 'question');
+    const shyChance = calculateParticipationChance(shy, 'question');
+
+    expect(outgoingChance).toBeGreaterThan(shyChance);
+  });
+
+  it('engaged students participate more', () => {
+    const engaged = createMockStudent({ engagement: 85 });
+    const disengaged = createMockStudent({ engagement: 25 });
+
+    expect(calculateParticipationChance(engaged, 'question')).toBeGreaterThan(
+      calculateParticipationChance(disengaged, 'question')
+    );
+  });
+
+  it('reading aloud activity type reduces participation for shy students', () => {
+    // Use an outgoing student to compare activity types without hitting floor
+    const outgoing = createMockStudent({ primaryTrait: 'outgoing', engagement: 70, academicLevel: 70 });
+    const shy = createMockStudent({ primaryTrait: 'shy', engagement: 70, academicLevel: 70 });
+
+    const outgoingReading = calculateParticipationChance(outgoing, 'reading-aloud');
+    const shyReading = calculateParticipationChance(shy, 'reading-aloud');
+
+    // Shy students should have much lower chance for reading aloud
+    expect(shyReading).toBeLessThan(outgoingReading);
+    expect(shyReading).toBeLessThan(0.3); // Low chance for shy students
+  });
+
+  it('recent participation reduces volunteer chance', () => {
+    const student = createMockStudent();
+
+    const withoutHistory = calculateParticipationChance(student, 'question');
+    const withRecentHistory = calculateParticipationChance(student, 'question', {
+      volunteeredCount: 5,
+      calledOnCount: 2,
+      correctAnswers: 3,
+      incorrectAnswers: 1,
+      lastParticipation: 1,
+    });
+
+    expect(withRecentHistory).toBeLessThan(withoutHistory);
+  });
+});
+
+describe('calculateParticipationQuality', () => {
+  it('volunteers perform better than those called on', () => {
+    const student = createMockStudent({ academicLevel: 70 });
+
+    const volunteerQuality = calculateParticipationQuality(student, true);
+    const calledOnQuality = calculateParticipationQuality(student, false);
+
+    expect(volunteerQuality.correctness).toBeGreaterThan(calledOnQuality.correctness);
+    expect(volunteerQuality.confidence).toBeGreaterThan(calledOnQuality.confidence);
+  });
+
+  it('shy students have lower confidence when called on', () => {
+    const shyStudent = createMockStudent({ primaryTrait: 'shy' });
+    const quality = calculateParticipationQuality(shyStudent, false);
+
+    expect(quality.confidence).toBeLessThan(50);
+  });
+
+  it('outgoing students have high confidence', () => {
+    const outgoingStudent = createMockStudent({ primaryTrait: 'outgoing' });
+    const quality = calculateParticipationQuality(outgoingStudent, true);
+
+    expect(quality.confidence).toBeGreaterThan(60);
+  });
+});
+
+describe('getParticipationBehavior', () => {
+  it('identifies eager volunteers', () => {
+    const eager = createMockStudent({ primaryTrait: 'outgoing', engagement: 85 });
+    const behavior = getParticipationBehavior(eager);
+
+    expect(behavior.tendency).toBe('eager-volunteer');
+  });
+
+  it('identifies avoidant students', () => {
+    const avoidant = createMockStudent({ primaryTrait: 'shy', engagement: 30 });
+    const behavior = getParticipationBehavior(avoidant);
+
+    expect(behavior.tendency).toBe('avoidant');
   });
 });
