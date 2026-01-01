@@ -166,9 +166,11 @@ export function StudentCard({ student, onClick, compact = false }: StudentCardPr
     return (
       <motion.div
         className={cn(
-          'relative cursor-pointer group',
+          'relative group',
+          onClick && 'cursor-pointer',
           !student.attendanceToday && 'opacity-50'
         )}
+        style={{ cursor: onClick ? 'pointer' : 'default' }} // Immediate cursor feedback
         onClick={onClick}
         onHoverStart={() => setShowThought(true)}
         onHoverEnd={() => setShowThought(false)}
@@ -180,16 +182,19 @@ export function StudentCard({ student, onClick, compact = false }: StudentCardPr
         {/* Interaction indicators */}
         <StudentInteractionBadge student={student} position="top-right" />
 
-        {/* Gradient border effect */}
-        <div className={cn(
-          'absolute -inset-[1px] rounded-xl bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm',
-          traitStyle.border
-        )} />
+        {/* Gradient border effect - only show when student is present */}
+        {student.attendanceToday && (
+          <div className={cn(
+            'absolute -inset-[1px] rounded-xl bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm',
+            traitStyle.border
+          )} />
+        )}
         <Card className={cn(
           'relative border-0 bg-card/80 backdrop-blur-sm',
-          'hover:scale-[1.02] active:scale-[0.98] transition-all duration-200',
-          traitStyle.glow,
-          'hover:shadow-lg'
+          // Only apply hover effects when student is present
+          student.attendanceToday && 'hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg',
+          student.attendanceToday && traitStyle.glow,
+          'transition-all duration-200'
         )}>
           <CardContent className="p-3">
             <div className="flex items-center gap-3">
@@ -219,9 +224,11 @@ export function StudentCard({ student, onClick, compact = false }: StudentCardPr
   return (
     <motion.div
       className={cn(
-        'relative cursor-pointer group',
+        'relative group',
+        onClick && 'cursor-pointer',
         !student.attendanceToday && 'opacity-50'
       )}
+      style={{ cursor: onClick ? 'pointer' : 'default' }} // Immediate cursor feedback
       onClick={onClick}
       onHoverStart={() => setShowThought(true)}
       onHoverEnd={() => setShowThought(false)}
@@ -234,24 +241,29 @@ export function StudentCard({ student, onClick, compact = false }: StudentCardPr
       <StudentInteractionBadge student={student} position="top-left" />
       <StudentInteractionIndicator student={student} />
 
-      {/* Gradient glow effect */}
-      <div className={cn(
-        'absolute -inset-[2px] rounded-xl bg-gradient-to-r opacity-0 group-hover:opacity-70 transition-all duration-300',
-        traitStyle.border,
-        'blur-md'
-      )} />
+      {/* Gradient glow effect - only show when student is present */}
+      {student.attendanceToday && (
+        <div className={cn(
+          'absolute -inset-[2px] rounded-xl bg-gradient-to-r opacity-0 group-hover:opacity-70 transition-all duration-300',
+          traitStyle.border,
+          'blur-md'
+        )} />
+      )}
 
-      {/* Gradient border */}
-      <div className={cn(
-        'absolute -inset-[1px] rounded-xl bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300',
-        traitStyle.border
-      )} />
+      {/* Gradient border - only show when student is present */}
+      {student.attendanceToday && (
+        <div className={cn(
+          'absolute -inset-[1px] rounded-xl bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300',
+          traitStyle.border
+        )} />
+      )}
 
       <Card className={cn(
         'relative border-0 bg-card/95 backdrop-blur-sm overflow-hidden',
-        'hover:scale-[1.01] active:scale-[0.99] transition-all duration-200',
-        traitStyle.glow,
-        'hover:shadow-xl'
+        // Only apply hover effects when student is present
+        student.attendanceToday && 'hover:scale-[1.01] active:scale-[0.99] hover:shadow-xl',
+        student.attendanceToday && traitStyle.glow,
+        'transition-all duration-200'
       )}>
         {/* Subtle gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/[0.02] dark:to-white/[0.02] pointer-events-none" />

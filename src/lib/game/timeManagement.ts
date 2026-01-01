@@ -46,10 +46,15 @@ export function applyRushing(
 ): RushingEffect {
   const contentToRush = targetProgress - currentProgress;
 
-  // Rushing penalties
-  const comprehensionPenalty = Math.min(50, contentToRush * 0.5); // Up to 50% loss
-  const engagementDrop = -Math.min(30, contentToRush * 0.3);
-  const teacherStress = Math.min(40, contentToRush * 0.4);
+  // Rushing penalties - reduced max penalty to prevent permanent damage
+  // Penalty now caps at 15 points (was 50) to allow reasonable recovery
+  // Diminishing returns: first 20% of rushed content is easier to absorb
+  const easyContent = Math.min(20, contentToRush);
+  const hardContent = Math.max(0, contentToRush - 20);
+  const comprehensionPenalty = Math.min(15, easyContent * 0.2 + hardContent * 0.35);
+
+  const engagementDrop = -Math.min(20, contentToRush * 0.2); // Reduced from 30
+  const teacherStress = Math.min(30, contentToRush * 0.3); // Reduced from 40
 
   // Time saved (can rush at ~1.5x speed)
   const normalTime = remainingMinutes;

@@ -53,6 +53,7 @@ export function SaveLoadModal({
   const [showImport, setShowImport] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -68,26 +69,38 @@ export function SaveLoadModal({
   };
 
   const handleSave = () => {
-    const result = saveGame(currentState, saveName || undefined);
-    if (result) {
-      setSuccess('Game saved successfully!');
-      setSaveName('');
-      refreshSaves();
-      onSave?.();
-      setTimeout(() => setSuccess(null), 2000);
-    } else {
-      setError('Failed to save game');
-    }
+    setIsLoading(true);
+    setError(null);
+    // Small delay to show loading state for better UX
+    setTimeout(() => {
+      const result = saveGame(currentState, saveName || undefined);
+      setIsLoading(false);
+      if (result) {
+        setSuccess('Game saved successfully!');
+        setSaveName('');
+        refreshSaves();
+        onSave?.();
+        setTimeout(() => setSuccess(null), 2000);
+      } else {
+        setError('Failed to save game');
+      }
+    }, 100);
   };
 
   const handleLoad = (saveId: string) => {
-    const state = loadGame(saveId);
-    if (state) {
-      onLoad(state);
-      setOpen(false);
-    } else {
-      setError('Failed to load save');
-    }
+    setIsLoading(true);
+    setError(null);
+    // Small delay to show loading state for better UX
+    setTimeout(() => {
+      const state = loadGame(saveId);
+      setIsLoading(false);
+      if (state) {
+        onLoad(state);
+        setOpen(false);
+      } else {
+        setError('Failed to load save');
+      }
+    }, 100);
   };
 
   const handleDelete = (saveId: string) => {
@@ -205,8 +218,8 @@ export function SaveLoadModal({
               <br />
               Class Average: {currentState.classAverage}%
             </div>
-            <Button onClick={handleSave} className="w-full">
-              Save Game
+            <Button onClick={handleSave} disabled={isLoading} className="w-full">
+              {isLoading ? 'Saving...' : 'Save Game'}
             </Button>
           </div>
         )}
@@ -254,9 +267,10 @@ export function SaveLoadModal({
                           size="sm"
                           variant="default"
                           onClick={() => handleLoad(save.id)}
+                          disabled={isLoading}
                           className="flex-1"
                         >
-                          Load
+                          {isLoading ? 'Loading...' : 'Load'}
                         </Button>
                         <Button
                           size="sm"

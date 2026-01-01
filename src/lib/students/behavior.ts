@@ -86,6 +86,30 @@ export function calculateEngagementChange(
     change += 5; // High energy boosts engagement
   }
 
+  // Social energy affects engagement for group activities
+  // Low social energy = introverts need alone time, struggle in groups
+  // High social energy = extroverts thrive in groups but may distract in solo work
+  const isGroupMethod = method.id === 'group-discussion' || method.id === 'collaborative' || method.id === 'game-based';
+  const isSoloMethod = method.id === 'independent-study' || method.id === 'lecture';
+
+  if (student.socialEnergy !== undefined) {
+    if (isGroupMethod) {
+      // Low social energy hurts group work, high helps
+      if (student.socialEnergy < 30) {
+        change -= 8; // Socially drained, struggles in groups
+      } else if (student.socialEnergy > 70) {
+        change += 5; // Socially energized, thrives in groups
+      }
+    } else if (isSoloMethod) {
+      // Low social energy actually helps solo work (introverts recharge)
+      if (student.socialEnergy < 30) {
+        change += 3; // Prefers quiet work
+      } else if (student.socialEnergy > 80 && (student.primaryTrait === 'social' || student.primaryTrait === 'outgoing')) {
+        change -= 5; // Too energized for quiet work
+      }
+    }
+  }
+
   // Mood affects engagement
   const moodFactor = getMoodIndex(student.mood) - 2; // -2 to +3
   change += moodFactor * 2;
@@ -261,6 +285,7 @@ export function simulateHomeworkCompletion(
   }
 
   // Calculate quality based on academic level and effort
+  // Academic level now provides a much stronger base
   let quality = student.academicLevel;
 
   // Perfectionist students do better quality work
@@ -268,8 +293,16 @@ export function simulateHomeworkCompletion(
     quality = Math.min(100, quality + 15);
   }
 
-  // Add some randomness
-  quality += (Math.random() - 0.5) * 20;
+  // Engagement affects homework quality
+  if (student.engagement > 70) {
+    quality += 8; // Engaged students put more effort in
+  } else if (student.engagement < 30) {
+    quality -= 5; // Disengaged students rush through
+  }
+
+  // Add reduced randomness (was -10 to +10, now -5 to +5)
+  // This ensures academic skill is the primary factor
+  quality += (Math.random() - 0.5) * 10;
 
   return { completed: true, quality: clamp(Math.round(quality), 30, 100) };
 }
@@ -669,7 +702,13 @@ export function applyMoodTrigger(
       if (student.primaryTrait === 'curious') {
         moodShift = 1 * intensityMultiplier;
       } else if (student.primaryTrait === 'analytical') {
-        moodShift = -0.5 * intensityMultiplier; // Analytical students dislike unpredictability
+        // Analytical students prefer predictability but don't always react negatively
+        // Only strong surprises upset them; mild/moderate surprises are neutral
+        if (trigger.intensity === 'strong') {
+          moodShift = -1; // Only strong surprises are negative
+        } else {
+          moodShift = 0; // Mild/moderate surprises are neutral
+        }
       } else {
         moodShift = 0.5 * intensityMultiplier;
       }

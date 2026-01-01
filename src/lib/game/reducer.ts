@@ -240,6 +240,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         // Determine attendance and track last present day
         const willAttend = Math.random() > 0.05; // 95% attendance
 
+        // Calculate days absent for catch-up mechanism
+        const daysAbsent = nextTurnNumber - (student.lastPresentDay || 0);
+
+        // Automatic catch-up for returning students (passive recovery)
+        // Students naturally catch up a bit when they return from absence
+        let catchUpBonus = 0;
+        if (willAttend && daysAbsent >= 2 && student.lastPresentDay !== undefined) {
+          // Returning students get a small academic boost to simulate catching up
+          // More days absent = more they learned to catch up on, but diminishing returns
+          catchUpBonus = Math.min(daysAbsent * 1.5, 8); // Max 8 point catch-up
+          // Adjust by academic ability - stronger students catch up faster
+          catchUpBonus *= (student.academicLevel / 100 + 0.5); // 0.5x to 1.5x multiplier
+        }
+
         return {
           ...recoveredStudent,
           attendanceToday: willAttend,
@@ -247,7 +261,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           homeworkCompleted: homeworkResult.completed,
           homeworkQuality: homeworkResult.quality,
           mood: finalMood,
-          academicLevel: Math.min(100, recoveredStudent.academicLevel + academicBoost),
+          academicLevel: Math.min(100, recoveredStudent.academicLevel + academicBoost + catchUpBonus),
         };
       });
 
@@ -409,34 +423,56 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       let updatedStudents = [...state.students];
       const updatedTeacher = { ...state.teacher };
 
-      // Apply effects
+      // Valid numeric attributes for teacher effects
+      const validTeacherAttributes = ['energy', 'suppliesBudget', 'reputation'] as const;
+      type TeacherAttribute = typeof validTeacherAttributes[number];
+
+      // Valid numeric attributes for student effects
+      const validStudentAttributes = [
+        'academicLevel', 'engagement', 'energy', 'socialSkills',
+        'popularity', 'socialEnergy', 'homeworkQuality',
+        'behaviorIncidents', 'positiveNotes'
+      ] as const;
+      type StudentAttribute = typeof validStudentAttributes[number];
+
+      // Apply effects with validated attribute access
       for (const effect of choice.effects) {
         if (effect.target === 'teacher') {
-          const key = effect.attribute as keyof typeof updatedTeacher;
-          if (typeof updatedTeacher[key] === 'number') {
-            (updatedTeacher[key] as number) = Math.max(0, Math.min(100,
-              (updatedTeacher[key] as number) + effect.modifier
-            ));
+          // Validate that the attribute is a known teacher numeric field
+          if (validTeacherAttributes.includes(effect.attribute as TeacherAttribute)) {
+            const key = effect.attribute as TeacherAttribute;
+            const currentValue = updatedTeacher[key];
+            if (typeof currentValue === 'number') {
+              (updatedTeacher as Record<TeacherAttribute, number>)[key] = Math.max(0, Math.min(100,
+                currentValue + effect.modifier
+              ));
+            }
           }
         } else if (effect.target === 'student' && effect.studentId) {
           updatedStudents = updatedStudents.map(s => {
             if (s.id !== effect.studentId) return s;
-            const key = effect.attribute as keyof typeof s;
-            if (typeof s[key] === 'number') {
+            // Validate that the attribute is a known student numeric field
+            if (!validStudentAttributes.includes(effect.attribute as StudentAttribute)) return s;
+            const key = effect.attribute as StudentAttribute;
+            const currentValue = s[key];
+            if (typeof currentValue === 'number') {
               return {
                 ...s,
-                [key]: Math.max(0, Math.min(100, (s[key] as number) + effect.modifier)),
+                [key]: Math.max(0, Math.min(100, currentValue + effect.modifier)),
               };
             }
             return s;
           });
         } else if (effect.target === 'class') {
           updatedStudents = updatedStudents.map(s => {
-            const key = effect.attribute as keyof typeof s;
-            if (typeof s[key] === 'number') {
+            // Validate that the attribute is a known student numeric field
+            if (!validStudentAttributes.includes(effect.attribute as StudentAttribute)) return s;
+            const key = effect.attribute as StudentAttribute;
+            const currentValue = s[key];
+            if (typeof currentValue === 'number') {
               return {
                 ...s,
-                [key]: Math.max(0, Math.min(100, (s[key] as number) + effect.modifier)),
+                [key]: Math.max(0, Math.min(100, currentValue + effect.modifier)),
               };
             }
             return s;
@@ -541,17 +577,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             updatedFriendshipStrengths[otherId] = newStrength;
 
             // Update friendIds and rivalIds based on strength
-            if (newStrength > 40 && !friendsList.has(otherId)) {
+            // Thresholds: Friend >30, Rival <-30, Neutral -15 to 15
+            // This eliminates dead zones (previously 20-40 and -40 to -20)
+            if (newStrength > 30 && !friendsList.has(otherId)) {
               friendsList.add(otherId);
               rivalsList.delete(otherId); // Can't be both
-            } else if (newStrength < -40 && !rivalsList.has(otherId)) {
+            } else if (newStrength < -30 && !rivalsList.has(otherId)) {
               rivalsList.add(otherId);
               friendsList.delete(otherId); // Can't be both
-            } else if (newStrength >= -20 && newStrength <= 20) {
+            } else if (newStrength >= -15 && newStrength <= 15) {
               // Neutral territory - remove from both if present
               friendsList.delete(otherId);
               rivalsList.delete(otherId);
             }
+            // Between 15-30 or -30 to -15: maintain current status (acquaintance buffer)
           }
         }
 

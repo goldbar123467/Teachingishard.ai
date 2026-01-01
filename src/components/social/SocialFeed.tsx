@@ -16,7 +16,7 @@ interface SocialFeedProps {
   students: Student[];
   onLike?: (postId: string) => void;
   onAuthorClick?: (student: Student) => void;
-  maxHeight?: string;
+  maxHeight?: string; // Use 'auto' or percentage for mobile-friendly sizing
   emptyStateEmoji?: string;
   emptyStateText?: string;
   phoneStyle?: boolean;
@@ -72,7 +72,7 @@ export function SocialFeed({
   students,
   onLike,
   onAuthorClick,
-  maxHeight = '600px',
+  maxHeight, // Default handled below for mobile responsiveness
   emptyStateEmoji = '🤐',
   emptyStateText = 'No posts yet. Check back later!',
   phoneStyle = false,
@@ -223,7 +223,11 @@ export function SocialFeed({
 
       {/* Feed Content */}
       <ScrollArea
-        style={{ height: maxHeight }}
+        style={{
+          height: maxHeight || 'auto',
+          maxHeight: maxHeight || 'calc(100vh - 280px)', // Responsive max height
+          minHeight: '200px'
+        }}
         className="flex-1"
       >
         <div

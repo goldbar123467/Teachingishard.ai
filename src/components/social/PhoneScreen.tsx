@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { X, Home, Bell, User } from 'lucide-react';
@@ -9,6 +9,46 @@ import type { Student } from '@/lib/game/types';
 import type { FeedPostData } from './FeedPost';
 import { SocialPost } from './SocialPost';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
+// Focus trap hook for modal accessibility
+function useFocusTrap(isActive: boolean) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isActive || !containerRef.current) return;
+
+    const container = containerRef.current;
+    const focusableElements = container.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    // Focus first element on mount
+    firstElement?.focus();
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Tab') return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    }
+
+    container.addEventListener('keydown', handleKeyDown);
+    return () => container.removeEventListener('keydown', handleKeyDown);
+  }, [isActive]);
+
+  return containerRef;
+}
 
 type PhoneTab = 'feed' | 'notifications' | 'profile';
 
@@ -31,6 +71,20 @@ export function PhoneScreen({
 }: PhoneScreenProps) {
   const [activeTab, setActiveTab] = useState<PhoneTab>('feed');
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Focus trap for accessibility
+  const focusTrapRef = useFocusTrap(true);
+
+  // Escape key handler
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   // Filter posts - student's own posts and posts they can see
   const visiblePosts = posts
@@ -55,6 +109,10 @@ export function PhoneScreen({
 
   return (
     <motion.div
+      ref={focusTrapRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${student.firstName}'s phone`}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
@@ -71,8 +129,8 @@ export function PhoneScreen({
           <div className="w-16 h-1 bg-slate-800 rounded-full" />
         </div>
 
-        {/* Screen */}
-        <div className="relative bg-slate-950 rounded-[2.5rem] overflow-hidden shadow-inner h-[680px] flex flex-col">
+        {/* Screen - responsive height for mobile */}
+        <div className="relative bg-slate-950 rounded-[2.5rem] overflow-hidden shadow-inner h-[min(680px,calc(100vh-120px))] flex flex-col">
           {/* Status Bar */}
           <div className="relative z-10 flex items-center justify-between px-6 pt-8 pb-2 bg-gradient-to-b from-slate-900/95 to-transparent">
             <span className="text-white text-sm font-medium">

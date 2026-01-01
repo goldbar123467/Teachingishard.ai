@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StudentGrid } from '@/components/students/StudentGrid';
 import { useGame, useClassStats, useTurn, useTeacher, useSchoolYear } from '@/hooks/useGame';
+import { useToast } from '@/hooks/use-toast';
 import { DAY_LABELS, PHASE_LABELS, PHASE_ORDER } from '@/lib/game/constants';
 import type { Student, GameEvent } from '@/lib/game/types';
 import { LessonSelector } from '@/components/teaching/LessonSelector';
@@ -326,6 +327,7 @@ export function DashboardPanel() {
   const turn = useTurn();
   const teacher = useTeacher();
   const schoolYear = useSchoolYear();
+  const { toast } = useToast();
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [activeEvent, setActiveEvent] = useState<GameEvent | null>(null);
@@ -365,6 +367,19 @@ export function DashboardPanel() {
   const handleInteraction = (action: string) => {
     if (selectedStudent && turn.phase === 'interaction') {
       interactWithStudent(selectedStudent.id, action);
+
+      // Show feedback for the interaction
+      const actionLabels: Record<string, { title: string; description: string }> = {
+        praise: { title: 'Praised student', description: `${selectedStudent.firstName} feels appreciated!` },
+        help: { title: 'Helped student', description: `${selectedStudent.firstName}'s understanding improved.` },
+        redirect: { title: 'Redirected student', description: `${selectedStudent.firstName} is back on track.` },
+        encourage: { title: 'Encouraged student', description: `${selectedStudent.firstName} feels more confident!` },
+        check_in: { title: 'Checked in', description: `You connected with ${selectedStudent.firstName}.` },
+      };
+
+      const feedback = actionLabels[action] || { title: 'Interacted', description: `Action taken with ${selectedStudent.firstName}.` };
+      toast({ title: feedback.title, description: feedback.description });
+
       setSelectedStudent(null);
     }
   };

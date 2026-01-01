@@ -34,17 +34,25 @@ export function useAutoSave(
     error: null,
   });
 
+  // Store state in a ref so we can access current state without causing re-renders
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
   const previousPhaseRef = useRef(state.turn.phase);
   const previousDayRef = useRef(state.turn.dayOfWeek);
   const previousWeekRef = useRef(state.turn.week);
 
+  // performSave no longer has state in dependency array - uses ref instead
   const performSave = useCallback(() => {
-    if (!enabled || !state.autoSaveEnabled) return;
+    const currentState = stateRef.current;
+    if (!enabled || !currentState.autoSaveEnabled) return;
 
     setStatus(prev => ({ ...prev, isSaving: true, error: null }));
 
     try {
-      const success = quickSave(state);
+      const success = quickSave(currentState);
       if (success) {
         setStatus({
           lastSaved: new Date(),
@@ -65,7 +73,7 @@ export function useAutoSave(
         error: error instanceof Error ? error.message : 'Unknown error',
       }));
     }
-  }, [state, enabled]);
+  }, [enabled]); // Only depends on enabled, not state
 
   // Save on phase change
   useEffect(() => {
@@ -91,7 +99,7 @@ export function useAutoSave(
     }
   }, [state.turn.dayOfWeek, state.turn.week, onDayChange, enabled, performSave]);
 
-  // Periodic save
+  // Periodic save - timer no longer resets when state changes
   useEffect(() => {
     if (!enabled || interval <= 0) return;
 
