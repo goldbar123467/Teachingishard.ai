@@ -4,6 +4,7 @@ import * as React from "react";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
+import { useActiveTab } from "@/hooks/useActiveTab";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,9 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children, onSaveClick }: MainLayoutProps) {
+  // Track active tab for persistence
+  useActiveTab();
+
   return (
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />

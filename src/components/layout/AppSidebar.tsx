@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   BookOpen,
   Calendar,
@@ -15,6 +17,7 @@ import {
   Save,
   Clock,
   ClipboardList,
+  BarChart3,
 } from "lucide-react";
 import { useGame } from "@/hooks/useGame";
 import {
@@ -37,23 +40,23 @@ import { cn } from "@/lib/utils";
 interface NavItem {
   title: string;
   icon: React.ElementType;
-  isActive?: boolean;
+  href: string;
   badge?: string | number;
 }
 
 const navItems: NavItem[] = [
-  { title: "Dashboard", icon: LayoutDashboard, isActive: true },
-  { title: "Lesson Planning", icon: ClipboardList },
-  { title: "Students", icon: Users },
-  { title: "Teaching", icon: BookOpen },
-  { title: "Events", icon: Sparkles },
-  { title: "Calendar", icon: Calendar },
-  { title: "Settings", icon: Settings },
+  { title: "Dashboard", icon: LayoutDashboard, href: "/" },
+  { title: "Lesson Planning", icon: ClipboardList, href: "/planning" },
+  { title: "Schedule", icon: Calendar, href: "/schedule" },
+  { title: "Students", icon: Users, href: "/students" },
+  { title: "Reports", icon: BarChart3, href: "/reports" },
+  { title: "Settings", icon: Settings, href: "/settings" },
 ];
 
 export function AppSidebar() {
   const { state } = useGame();
   const { state: sidebarState } = useSidebar();
+  const pathname = usePathname();
   const isCollapsed = sidebarState === "collapsed";
 
   const teacher = state.teacher;
@@ -67,10 +70,18 @@ export function AppSidebar() {
     return item;
   });
 
+  // Determine if a nav item is active
+  const isActive = (href: string) => {
+    if (href === "/") {
+      return pathname === "/";
+    }
+    return pathname.startsWith(href);
+  };
+
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-3 px-2 py-3">
+        <Link href="/" className="flex items-center gap-3 px-2 py-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-blue-500 text-white shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105">
             <GraduationCap className="h-5 w-5" />
           </div>
@@ -84,7 +95,7 @@ export function AppSidebar() {
               </span>
             </div>
           )}
-        </div>
+        </Link>
       </SidebarHeader>
 
       <SidebarContent>
@@ -94,40 +105,46 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {itemsWithBadges.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    isActive={item.isActive}
-                    tooltip={item.title}
-                    className={cn(
-                      "relative cursor-pointer transition-all duration-200 ease-in-out",
-                      "hover:scale-[1.02] hover:shadow-sm",
-                      item.isActive
-                        ? "bg-gradient-to-r from-violet-500/20 to-blue-500/10 text-violet-600 dark:text-violet-400 font-semibold shadow-sm border-l-2 border-violet-500"
-                        : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50",
-                      "focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
-                    )}
-                    aria-current={item.isActive ? "page" : undefined}
-                  >
-                    <item.icon
+              {itemsWithBadges.map((item) => {
+                const active = isActive(item.href);
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      tooltip={item.title}
                       className={cn(
-                        "h-4 w-4 transition-colors duration-200",
-                        item.isActive
-                          ? "text-violet-600 dark:text-violet-400"
-                          : "text-sidebar-foreground/50"
+                        "relative cursor-pointer transition-all duration-200 ease-in-out",
+                        "hover:scale-[1.02] hover:shadow-sm",
+                        active
+                          ? "bg-gradient-to-r from-violet-500/20 to-blue-500/10 text-violet-600 dark:text-violet-400 font-semibold shadow-sm border-l-2 border-violet-500"
+                          : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50",
+                        "focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
                       )}
-                    />
-                    <span className="transition-colors duration-200">
-                      {item.title}
-                    </span>
-                    {item.badge && (
-                      <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold text-white shadow-sm animate-pulse">
-                        {item.badge}
-                      </span>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                      aria-current={active ? "page" : undefined}
+                    >
+                      <Link href={item.href}>
+                        <item.icon
+                          className={cn(
+                            "h-4 w-4 transition-colors duration-200",
+                            active
+                              ? "text-violet-600 dark:text-violet-400"
+                              : "text-sidebar-foreground/50"
+                          )}
+                        />
+                        <span className="transition-colors duration-200">
+                          {item.title}
+                        </span>
+                        {item.badge && (
+                          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold text-white shadow-sm animate-pulse">
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
