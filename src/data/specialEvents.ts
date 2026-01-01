@@ -18,6 +18,7 @@ export interface SpecialEvent {
     engagement?: number;
     energy?: number;
     learning?: number;
+    stress?: number;
   }[];
   choices?: SpecialEventChoice[];
   autoResolve?: boolean; // Some events just happen
@@ -97,7 +98,7 @@ export const FIRE_DRILL_EVENTS: SpecialEvent[] = [
         id: 'reassuring',
         label: 'Keep students calm with reassuring presence',
         effects: [
-          { target: 'class', mood: 1, stress: -10 },
+          { target: 'class', mood: 1, energy: -10 },
           { target: 'teacher', energy: -10 }
         ]
       },
@@ -141,7 +142,7 @@ export const SUBSTITUTE_EVENTS: SpecialEvent[] = [
         id: 'detailed-plans',
         label: 'Leave extremely detailed lesson plans',
         effects: [
-          { target: 'class', engagement: 10, learning: 3 },
+          { target: 'class', engagement: 10 },
           { target: 'teacher', energy: -15 }
         ]
       },
@@ -157,7 +158,7 @@ export const SUBSTITUTE_EVENTS: SpecialEvent[] = [
         id: 'movie-day',
         label: 'Plan an educational movie day',
         effects: [
-          { target: 'class', mood: 2, learning: -2 },
+          { target: 'class', mood: 2 },
           { target: 'teacher', energy: -3 }
         ]
       }
@@ -239,7 +240,7 @@ export const CLASS_PET_EVENTS: SpecialEvent[] = [
         id: 'science-lesson',
         label: 'Integrate into science curriculum',
         effects: [
-          { target: 'class', engagement: 18, learning: 5 },
+          { target: 'class', engagement: 18 },
           { target: 'teacher', energy: -20 }
         ]
       }
@@ -278,7 +279,7 @@ export const CLASS_PET_EVENTS: SpecialEvent[] = [
         id: 'detective-game',
         label: 'Turn it into a detective/problem-solving game',
         effects: [
-          { target: 'class', engagement: 15, mood: 2, learning: 3 },
+          { target: 'class', engagement: 15, mood: 2 },
           { target: 'teacher', energy: -20 }
         ]
       }
@@ -301,7 +302,7 @@ export const CLASS_PET_EVENTS: SpecialEvent[] = [
         id: 'vet-lesson',
         label: 'Use it to teach about veterinary care and responsibility',
         effects: [
-          { target: 'class', mood: 1, learning: 4, engagement: 8 },
+          { target: 'class', mood: 1, engagement: 8 },
           { target: 'teacher', energy: -12 }
         ]
       },
@@ -309,7 +310,7 @@ export const CLASS_PET_EVENTS: SpecialEvent[] = [
         id: 'comfort',
         label: 'Help students process their feelings',
         effects: [
-          { target: 'class', mood: 1, stress: -10 },
+          { target: 'class', mood: 1, energy: -10 },
           { target: 'teacher', energy: -15 }
         ]
       },
@@ -344,7 +345,7 @@ export const HOLIDAY_EVENTS: SpecialEvent[] = [
         id: 'party',
         label: 'Host a structured Halloween party with learning games',
         effects: [
-          { target: 'class', mood: 3, engagement: 15, learning: 2 },
+          { target: 'class', mood: 3, engagement: 15 },
           { target: 'teacher', energy: -25 }
         ]
       },
@@ -360,7 +361,7 @@ export const HOLIDAY_EVENTS: SpecialEvent[] = [
         id: 'educational',
         label: 'Focus on history/cultural aspects of Halloween',
         effects: [
-          { target: 'class', engagement: 8, learning: 5, mood: 0 },
+          { target: 'class', engagement: 8, mood: 0 },
           { target: 'teacher', energy: -15 }
         ]
       }
@@ -383,7 +384,7 @@ export const HOLIDAY_EVENTS: SpecialEvent[] = [
         id: 'inclusive',
         label: 'Plan inclusive winter celebration for all traditions',
         effects: [
-          { target: 'class', mood: 3, engagement: 12, learning: 4 },
+          { target: 'class', mood: 3, engagement: 12 },
           { target: 'teacher', energy: -20 }
         ]
       },
@@ -399,7 +400,7 @@ export const HOLIDAY_EVENTS: SpecialEvent[] = [
         id: 'service',
         label: 'Focus on service/giving back activities',
         effects: [
-          { target: 'class', mood: 2, engagement: 15, learning: 6 },
+          { target: 'class', mood: 2, engagement: 15 },
           { target: 'teacher', energy: -18 }
         ]
       }
@@ -430,7 +431,7 @@ export const HOLIDAY_EVENTS: SpecialEvent[] = [
         id: 'craft',
         label: 'Focus on friendship craft activity',
         effects: [
-          { target: 'class', mood: 2, engagement: 12, learning: 2 },
+          { target: 'class', mood: 2, engagement: 12 },
           { target: 'teacher', energy: -20 }
         ]
       },
@@ -479,7 +480,7 @@ export const WEATHER_EVENTS: SpecialEvent[] = [
         id: 'improvise',
         label: 'Improvise with flashlights and oral storytelling',
         effects: [
-          { target: 'class', mood: 2, engagement: 15, learning: 3 },
+          { target: 'class', mood: 2, engagement: 15 },
           { target: 'teacher', energy: -15 }
         ]
       },
@@ -515,7 +516,7 @@ export const TECHNOLOGY_EVENTS: SpecialEvent[] = [
     autoResolve: false,
     duration: 'phase',
     effects: [
-      { target: 'teacher', energy: -10, stress: 15 }
+      { target: 'teacher', energy: -10 }
     ],
     choices: [
       {
@@ -530,7 +531,7 @@ export const TECHNOLOGY_EVENTS: SpecialEvent[] = [
         id: 'hands-on',
         label: 'Switch to hands-on activity instead',
         effects: [
-          { target: 'class', engagement: 15, mood: 1, learning: 4 },
+          { target: 'class', engagement: 15, mood: 1 },
           { target: 'teacher', energy: -20 }
         ]
       },
@@ -539,7 +540,7 @@ export const TECHNOLOGY_EVENTS: SpecialEvent[] = [
         label: 'Try to fix it (risk losing time)',
         effects: [
           { target: 'class', engagement: -10, mood: -1 },
-          { target: 'teacher', energy: -25, stress: 10 }
+          { target: 'teacher', energy: -25 }
         ]
       }
     ]
@@ -561,7 +562,7 @@ export const TECHNOLOGY_EVENTS: SpecialEvent[] = [
         id: 'prepare',
         label: 'Have students prepare questions in advance',
         effects: [
-          { target: 'class', engagement: 20, learning: 8 },
+          { target: 'class', engagement: 20 },
           { target: 'teacher', energy: -15 }
         ]
       },
@@ -569,7 +570,7 @@ export const TECHNOLOGY_EVENTS: SpecialEvent[] = [
         id: 'casual',
         label: 'Keep it casual and conversational',
         effects: [
-          { target: 'class', engagement: 15, learning: 5, mood: 1 },
+          { target: 'class', engagement: 15, mood: 1 },
           { target: 'teacher', energy: -8 }
         ]
       }
@@ -596,7 +597,7 @@ export const SURPRISE_EVENTS: SpecialEvent[] = [
         id: 'integrate',
         label: 'Integrate into your reading curriculum',
         effects: [
-          { target: 'class', engagement: 15, learning: 4, mood: 2 },
+          { target: 'class', engagement: 15, mood: 2 },
           { target: 'teacher', energy: -5 }
         ]
       },
@@ -620,7 +621,7 @@ export const SURPRISE_EVENTS: SpecialEvent[] = [
     autoResolve: false,
     duration: 'phase',
     effects: [
-      { target: 'teacher', stress: 20, energy: -10 }
+      { target: 'teacher', energy: -10 }
     ],
     choices: [
       {
@@ -628,14 +629,14 @@ export const SURPRISE_EVENTS: SpecialEvent[] = [
         label: 'Showcase your best lesson plans',
         effects: [
           { target: 'class', engagement: 15 },
-          { target: 'teacher', energy: -20, stress: 5 }
+          { target: 'teacher', energy: -20 }
         ]
       },
       {
         id: 'normal',
         label: 'Proceed with normal lesson',
         effects: [
-          { target: 'teacher', energy: -10, stress: -5 }
+          { target: 'teacher', energy: -10 }
         ]
       }
     ]

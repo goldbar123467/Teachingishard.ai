@@ -1,4 +1,4 @@
-import type { Student, Lesson, TeachingMethod, HomeworkType, Mood, GamePhase } from '../game/types';
+import type { Student, Lesson, TeachingMethod, HomeworkType, Mood, GamePhase, PersonalityTrait } from '../game/types';
 import { PERSONALITY_PROFILES } from './personalities';
 
 // Import emergent behavior systems

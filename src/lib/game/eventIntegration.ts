@@ -68,14 +68,14 @@ export function processPhaseEvents(
         const shouldConsequence = shouldIssueConsequence(
           updatedStudents[i],
           'disruption',
-          behaviorEvent.severity
+          'major' // high severity maps to major
         );
 
         if (shouldConsequence) {
           const consequence = issueConsequence(
             updatedStudents[i],
             'disruption',
-            behaviorEvent.severity,
+            'major',
             behaviorEvent.description
           );
 

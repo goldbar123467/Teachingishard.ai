@@ -15,6 +15,7 @@ export interface TimeTracker {
   blockStartTime: Date;
   elapsedMinutes: number;
   remainingMinutes: number;
+  totalMinutes: number;
   pacing: PacingStatus;
   alerts: TimeAlert[];
 }
@@ -49,6 +50,7 @@ export function createTimeTracker(
     blockStartTime: startTime,
     elapsedMinutes: 0,
     remainingMinutes: blockDurationMinutes,
+    totalMinutes: blockDurationMinutes,
     pacing: 'on-track',
     alerts: [],
   };
